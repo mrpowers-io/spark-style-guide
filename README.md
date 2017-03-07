@@ -10,21 +10,25 @@ This guide will outline how to format stuff you'll frequently encounter in Spark
 
 Variables should use camelCase.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed accordingly to make your code readable:
 
-* DataFrames should be suffixed with `DF` (following conventions in the [Spark Programming Guide](http://spark.apache.org/docs/latest/sql-programming-guide.html))
+* Variables pointing to DataFrames should be suffixed with `DF` (following conventions in the [Spark Programming Guide](http://spark.apache.org/docs/latest/sql-programming-guide.html))
 
-* Datasets should be suffixed with `DS`
-
-* RDDs should be suffixed with `RDD`
-
-Here are some examples from the Spark Programming Guide:
 
 ```scala
 peopleDF.createOrReplaceTempView("people")
+```
 
+* Variables pointing to Datasets should be suffixed with `DS`
+
+
+```scala
 val stringsDS = sqlDF.map {
   case Row(key: Int, value: String) => s"Key: $key, Value: $value"
 }
+```
 
+* Variables pointing to RDDs should be suffixed with `RDD`
+
+```scala
 val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
 ```
 
