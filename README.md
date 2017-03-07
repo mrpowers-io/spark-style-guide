@@ -30,4 +30,14 @@ val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.
 
 ## Chained Method Calls
 
+Spark methods are often deeply chained and should be broken up on multiple lines.
 
+```spark
+jdbcDF.write
+  .format("jdbc")
+  .option("url", "jdbc:postgresql:dbserver")
+  .option("dbtable", "schema.tablename")
+  .option("user", "username")
+  .option("password", "password")
+  .save()
+```
