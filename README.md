@@ -4,7 +4,7 @@ Spark is an amazingly powerful big data engine that's written in Scala.
 
 There are some [awesome Scala style guides](https://github.com/databricks/scala-style-guide) but they cover a lot of advanced language features that aren't frequently encountered by Spark users.  [Haters gonna hate](https://www.reddit.com/r/scala/comments/2ze443/a_good_example_of_a_scala_style_guide_by_people/)!
 
-This guide will outline how to format stuff you'll frequently encounter in Spark.
+This guide will outline how to format code you'll frequently encounter in Spark.
 
 ## Variables
 
@@ -36,7 +36,7 @@ val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.
 
 Spark methods are often deeply chained and should be broken up on multiple lines.
 
-```spark
+```scala
 jdbcDF.write
   .format("jdbc")
   .option("url", "jdbc:postgresql:dbserver")
@@ -45,3 +45,37 @@ jdbcDF.write
   .option("password", "password")
   .save()
 ```
+
+Here's an example of a well formatted extract:
+
+```scala
+val extractDF = spark.read.parquet("someS3Path")
+  .select(
+    "name",
+    "Date of Birth"
+  )
+  .transform(someCustomTransformation)
+  .withColumnRenamed("Date of Birth", "date_of_birth")
+  .withColumnRenamed("token4", "patient_id")
+  .filter(
+    col("date_of_birth") > "1999-01-02"
+  )
+```
+
+## Spark SQL
+
+Use multiline strings to format SQL code:
+
+```scala
+val coolDF = spark.sql("""
+select
+  `first_name`,
+  `last_name`,
+  `hair_color`
+from people
+""")
+```
+
+## User Defined Functions
+
+*Coming soon...*
