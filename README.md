@@ -79,3 +79,55 @@ from people
 ## User Defined Functions
 
 *Coming soon...*
+
+## null
+
+*Coming soon...*
+
+## Custom transformations
+
+Use multiple parameter lists when defining custom transformations, so you can use them with the `Dataset#transform` method.  Let's disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
+
+```scala
+def withCat(name: String)(df: DataFrame): DataFrame = {
+  df.withColumn("cats", lit(s"$name meow"))
+}
+```
+
+The `withCat()` custom transformation can be used as follows:
+
+```scala
+val niceDf = df.transform(withCat("puffy"))
+```
+
+### Validating DataFrame dependencies
+
+*Coming soon...*
+
+## Whitespace
+
+Arguments in a sequence should be separated with a space:
+
+```scala
+Seq("a", "b", "c")
+```
+
+Put one space after colons and no spaces before colons:
+
+```scala
+case class Person(name: String, age: Int)
+```
+
+There should be one space on either side of an operator (including the assignment operator):
+
+```scala
+def max(data: Array[Int]): Int = {
+  var max = Int.MinValue
+  for (v <- data) {
+    if (v > max) {
+      max = v
+    }
+  }
+  max
+}
+```
