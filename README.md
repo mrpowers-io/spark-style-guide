@@ -76,7 +76,6 @@ val extractDF = spark.read.parquet("someS3Path")
   )
   .transform(someCustomTransformation)
   .withColumnRenamed("Date of Birth", "date_of_birth")
-  .withColumnRenamed("token4", "patient_id")
   .filter(
     col("date_of_birth") > "1999-01-02"
   )
@@ -112,7 +111,9 @@ The schema for a column should set nullable to `false` if the column should not 
 
 ## Custom transformations
 
-Use multiple parameter lists when defining custom transformations, so you can use them with the `Dataset#transform` method.  Let's disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
+Use multiple parameter lists when defining custom transformations, so you can chain your custom transformations with the `Dataset#transform` method.  Let's disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
+
+You need to use multiple parameter lists to write awesome code like this:
 
 ```scala
 def withCat(name: String)(df: DataFrame): DataFrame = {
@@ -138,7 +139,7 @@ Arguments in a sequence should be separated with a space:
 Seq("a", "b", "c")
 ```
 
-Put one space after colons and no spaces before colons:
+Put one space after colons and don't put spaces before colons:
 
 ```scala
 case class Person(name: String, age: Int)
@@ -147,13 +148,7 @@ case class Person(name: String, age: Int)
 There should be one space on either side of an operator (including the assignment operator):
 
 ```scala
-def max(data: Array[Int]): Int = {
-  var max = Int.MinValue
-  for (v <- data) {
-    if (v > max) {
-      max = v
-    }
-  }
-  max
+def max(num1: Int, num2: Int): Int = {
+  if (num1 > num2) num1 else num2
 }
 ```
