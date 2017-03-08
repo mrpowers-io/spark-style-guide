@@ -102,7 +102,13 @@ from people
 
 ## null
 
-*Coming soon...*
+`null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
+
+Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
+
+In general, it's better to keep all `null` references out of code and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitve code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.
+
+The schema for a column should set nullable to `false` if the column should not take `null` values.
 
 ## Custom transformations
 
