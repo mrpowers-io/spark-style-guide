@@ -32,6 +32,26 @@ val stringsDS = sqlDF.map {
 val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
 ```
 
+Use the variable `col` for `Column` arguments.
+
+```scala
+def min(col: Column)
+```
+
+Use `col1` and `col2` for methods that take two `Column` arguments.
+
+```scala
+def corr(col1: Column, col2: Column)
+```
+
+Use `cols` for methods that take an arbitrary number of `Column` arguments.
+
+```scala
+def array(cols: Column*)
+```
+
+For methods that take column names, follow the same pattern and use `colName`, `colName1`, `colName2`, and `colNames` as variables.
+
 ## Chained Method Calls
 
 Spark methods are often deeply chained and should be broken up on multiple lines.
