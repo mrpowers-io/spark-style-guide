@@ -142,3 +142,19 @@ If the DataFrame doesn't contain the required columns, it should error out with 
 com.github.mrpowers.spark.daria.sql.MissingDataFrameColumnsException: The [first\_name] columns are not included in the DataFrame with the following columns [last\_name, age, height].
 
 See the [spark-daria](https://github.com/MrPowers/spark-daria) project for a `DataFrameValidator` class that makes it easy to validate the presence of columns in a DataFrame.
+
+## JAR Files
+
+JAR files should be named like this:
+
+```
+spark-testing-base_2.11-2.1.0_0.6.0.jar
+```
+
+Generically:
+
+```
+spark-testing-base_scalaVersion-sparkVersion_projectVersion.jar
+```
+
+*TODO* Add a description on how the build.sbt file can be updated to generate the desired JAR file name automatically.
