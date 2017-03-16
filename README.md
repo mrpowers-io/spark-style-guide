@@ -131,31 +131,3 @@ val niceDf = df.transform(withCat("puffy"))
 
 *Coming soon...*
 
-## Whitespace
-
-Arguments in a sequence should be separated with a space:
-
-```scala
-Seq("a", "b", "c")
-```
-
-Put one space after colons and don't put spaces before colons:
-
-```scala
-case class Person(name: String, age: Int)
-```
-
-There should be one space on either side of an operator (including the assignment operator):
-
-```scala
-def max(num1: Int, num2: Int): Int = {
-  if (num1 > num2) num1 else num2
-}
-```
-
-*Summary of whitespace rules*
-
-* Put one space after a comma
-* Put one space after a colon
-* Put one space before and after an operator
-* Use 2 space indentation
