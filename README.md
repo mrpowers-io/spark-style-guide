@@ -157,4 +157,10 @@ Generically:
 spark-testing-base_scalaVersion-sparkVersion_projectVersion.jar
 ```
 
-*TODO* Add a description on how the build.sbt file can be updated to generate the desired JAR file name automatically.
+If you're using sbt assembly, you can use the following line of code to build a JAR file using the correct naming conventions.
+
+```scala
+assemblyJarName in assembly := s"${name.value}_2.11-${sparkVersion.value}_${version.value}.jar"
+```
+
+*TODO* Figure out a better way to include the Scala version than hardcoding it
