@@ -124,10 +124,21 @@ def withCat(name: String)(df: DataFrame): DataFrame = {
 The `withCat()` custom transformation can be used as follows:
 
 ```scala
-val niceDf = df.transform(withCat("puffy"))
+val niceDF = df.transform(withCat("puffy"))
 ```
 
 ### Validating DataFrame dependencies
 
-*Coming soon...*
+DataFrame transformations that make schema assumptions should error out if the assumed DataFrame columns aren't present.
 
+Suppose the following `fullName` transformation assumes the `df` has `first_name` and `last_name` columns.
+
+```scala
+val peopleDF = df.transform(fullName)
+```
+
+If the DataFrame doesn't contain the required columns, it should error out with a readable error message:
+
+com.github.mrpowers.spark.daria.sql.MissingDataFrameColumnsException: The [first\_name] columns are not included in the DataFrame with the following columns [last\_name, age, height].
+
+See the [spark-daria](https://github.com/MrPowers/spark-daria) project for a `DataFrameValidator` class that makes it easy to validate the presence of columns in a DataFrame.
