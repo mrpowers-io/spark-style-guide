@@ -164,3 +164,43 @@ assemblyJarName in assembly := s"${name.value}_2.11-${sparkVersion.value}_${vers
 ```
 
 *TODO* Figure out a better way to include the Scala version than hardcoding it
+
+## Testing
+
+Use the [spark-testing-base](https://github.com/holdenk/spark-testing-base) library for writing tests with Spark.
+
+Test the `#and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
+
+```scala
+class FunctionsSpec extends FunSpec with DataFrameSuiteBase {
+
+  import spark.implicits._
+	
+  describe("#and") {
+	
+    it ("returns true if both columns are true") {
+	
+      // some code
+	
+    }
+    
+  }
+	
+}
+```
+
+Test static methods as follows:
+
+```scala
+describe(".standardizeName") {
+
+  it("consistenly formats the name") {
+  
+    // some code
+    
+  }
+  
+}
+```
+
+Instance methods are preceded with a pound sign (e.g. `#and`) and static methods are preceded with a period (e.g. `.standardizeName`) in the `describe` block.  This follows [Ruby testing conventions](http://betterspecs.org/#describe).
