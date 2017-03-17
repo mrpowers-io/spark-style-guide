@@ -6,7 +6,17 @@ There are some [awesome Scala style guides](https://github.com/databricks/scala-
 
 This guide will outline how to format code you'll frequently encounter in Spark.
 
-## Variables
+## <a name='TOC'>Table of Contents</a>
+
+  1. [Variables](#variables)
+  1. [Chained Method Calls](#chained-method-calls)
+  1. [Spark SQL](#spark-sql)
+  2. [User Defined Functions](#user-defined-functions)
+  3. [Custom Transformations](#custom-transformations)
+  4. [JAR Fils](#jar-files)
+  5. [Testing](#testing)
+
+## <a name='variables'>Variables</a>
 
 Variables should use camelCase.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed accordingly to make your code readable:
 
@@ -52,7 +62,7 @@ def array(cols: Column*)
 
 For methods that take column names, follow the same pattern and use `colName`, `colName1`, `colName2`, and `colNames` as variables.
 
-## Chained Method Calls
+## <a name='chained-method-calls'>Chained Method Calls</a>
 
 Spark methods are often deeply chained and should be broken up on multiple lines.
 
@@ -81,7 +91,7 @@ val extractDF = spark.read.parquet("someS3Path")
   )
 ```
 
-## Spark SQL
+## <a name='spark-sql'>Spark SQL</a>
 
 Use multiline strings to format SQL code:
 
@@ -95,11 +105,11 @@ from people
 """)
 ```
 
-## User Defined Functions
+## <a name='user-defined-functions'>User Defined Functions</a>
 
 *Coming soon...*
 
-## null
+## <a name='null'>null</a>
 
 `null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
 
@@ -109,7 +119,7 @@ In general, it's better to keep all `null` references out of code and use `Optio
 
 The schema for a column should set nullable to `false` if the column should not take `null` values.
 
-## Custom transformations
+## <a name='custom-transformations'>Custom transformations</a>
 
 Use multiple parameter lists when defining custom transformations, so you can chain your custom transformations with the `Dataset#transform` method.  Let's disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
 
@@ -143,7 +153,7 @@ com.github.mrpowers.spark.daria.sql.MissingDataFrameColumnsException: The [first
 
 See the [spark-daria](https://github.com/MrPowers/spark-daria) project for a `DataFrameValidator` class that makes it easy to validate the presence of columns in a DataFrame.
 
-## JAR Files
+## <a name='jar-files'>JAR Files</a>
 
 JAR files should be named like this:
 
@@ -165,7 +175,7 @@ assemblyJarName in assembly := s"${name.value}_2.11-${sparkVersion.value}_${vers
 
 *TODO* Figure out a better way to include the Scala version than hardcoding it
 
-## Testing
+## <a name='testing'>Testing</a>
 
 Use the [spark-testing-base](https://github.com/holdenk/spark-testing-base) library for writing tests with Spark.
 
