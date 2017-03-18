@@ -11,9 +11,10 @@ This guide will outline how to format code you'll frequently encounter in Spark.
   1. [Variables](#variables)
   1. [Chained Method Calls](#chained-method-calls)
   1. [Spark SQL](#spark-sql)
+  2. [Code Organization](#code-organization)
   2. [User Defined Functions](#user-defined-functions)
   3. [Custom Transformations](#custom-transformations)
-  4. [JAR Fils](#jar-files)
+  4. [JAR Files](#jar-files)
   5. [Testing](#testing)
 
 ## <a name='variables'>Variables</a>
@@ -104,6 +105,21 @@ select
 from people
 """)
 ```
+
+
+## <a name='code-organization'>Code Organization</a>
+
+Here is how to organize code (from most preferred to least preferred location):
+
+1. Open source user defined functions
+2. Private user defined functions
+3. Custom DataFrame transformations
+
+Open source user defined functions are generic and can be reused in a variety of contexts.  The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples.
+
+Functions that contain proprietary information and cannot be made open source should be organized as user defined functions in private repositories.
+
+Custom DataFrame transformations rely on the schema of the underlying DataFrame and should be avoided when possible.  You'll often be forced to choose between a custom DataFrame transformation and a user defined function that takes several arguments.  Requiring users to pass multiple arguments to a function can make code harder to use and that's when you'll need to fall back to custom DataFrame transformations.
 
 ## <a name='user-defined-functions'>User Defined Functions</a>
 
