@@ -62,7 +62,7 @@ Use `cols` for methods that take an arbitrary number of `Column` arguments.
 def array(cols: Column*)
 ```
 
-For methods that take column names, follow the same pattern and use `colName`, `colName1`, `colName2`, and `colNames` as variables.
+For methods that take column name `String` arguments, follow the same pattern and use `colName`, `colName1`, `colName2`, and `colNames` as variables.
 
 ## <a name='chained-method-calls'>Chained Method Calls</a>
 
