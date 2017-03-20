@@ -150,10 +150,10 @@ awesomeDF.withColumn(
 )
 ```
 
-And use a readable custom transformation like this:
+Use a readable custom transformation like this:
 
 ```scala
-peopleDF.withSecretSauce()
+awesomeDF.withSecretSauce()
 ```
 
 ### Code location preference heirarchy
