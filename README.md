@@ -14,6 +14,7 @@ This guide will outline how to format code you'll frequently encounter in Spark.
   2. [Code Organization](#code-organization)
   2. [User Defined Functions](#user-defined-functions)
   3. [Custom Transformations](#custom-transformations)
+  4. [null](#null)
   4. [JAR Files](#jar-files)
   5. [Testing](#testing)
 
@@ -109,31 +110,62 @@ from people
 
 ## <a name='code-organization'>Code Organization</a>
 
-Here is how to organize code (from most preferred to least preferred location):
+### Write open souce code when possible
 
-1. Open source user defined functions
-2. Private user defined functions
-3. Custom DataFrame transformations
+You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to Spark Packages / Maven Repository) and forces you to design code without business logic.
 
-Open source user defined functions are generic and can be reused in a variety of contexts.  The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples.
+The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples of open source functions.
 
-Functions that contain proprietary information and cannot be made open source should be organized as user defined functions in private repositories.
+The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
 
-Custom DataFrame transformations rely on the schema of the underlying DataFrame and should be avoided when possible.  You'll often be forced to choose between a custom DataFrame transformation and a user defined function that takes several arguments.  Requiring users to pass multiple arguments to a function can make code harder to use and that's when you'll need to fall back to custom DataFrame transformations.
+### Prefer UDFs over custom transformations
+
+User defined functions (UDFs) don't have knowledge of the underlying DataFrame schema, so they can be applied more generically than custom transformations.
+
+In the following example, the `ageUDF` can be applied to any two columns in a DataFrame and allows the user name the column that's appended to the DataFrame.
+
+```scala
+peopleDF.withColumn("age", ageUDF($"birth_date", current_date()))
+```
+
+A `withAge` custom transformation will have to make assumptions about the date columns and does not enable the user to customize the name of the column that's appended to the DataFrame.
+
+```scala
+peopleDF.withAge()
+```
+
+You should only fall back to custom transformations when the UDF would take a ton of arguments and be difficult to read / invoke.
+
+Avoid code like this:
+
+```scala
+awesomeDF.withColumn(
+  "secret_sauce",
+  crazyUDF(
+    $"pikachu_mood",
+    $"jigglypuff_song_length",
+    $"argentina_inflation",
+    $"mc_hammer_net_worth"
+  )
+)
+```
+
+And use a readable custom transformation like this:
+
+```scala
+peopleDF.withSecretSauce()
+```
+
+### Code location preference heirarchy
+
+1. Open source UDFs
+2. Open source custom transformations
+3. Closed source UDFs
+4. Closed source custom transformations
 
 ## <a name='user-defined-functions'>User Defined Functions</a>
 
 *Coming soon...*
-
-## <a name='null'>null</a>
-
-`null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
-
-Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
-
-In general, it's better to keep all `null` references out of code and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitve code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.
-
-The schema for a column should set nullable to `false` if the column should not take `null` values.
 
 ## <a name='custom-transformations'>Custom transformations</a>
 
@@ -168,6 +200,17 @@ If the DataFrame doesn't contain the required columns, it should error out with 
 com.github.mrpowers.spark.daria.sql.MissingDataFrameColumnsException: The [first\_name] columns are not included in the DataFrame with the following columns [last\_name, age, height].
 
 See the [spark-daria](https://github.com/MrPowers/spark-daria) project for a `DataFrameValidator` class that makes it easy to validate the presence of columns in a DataFrame.
+
+
+## <a name='null'>null</a>
+
+`null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
+
+Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
+
+In general, it's better to keep all `null` references out of code and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitve code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.
+
+The schema for a column should set nullable to `false` if the column should not take `null` values.
 
 ## <a name='jar-files'>JAR Files</a>
 
