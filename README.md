@@ -2,12 +2,18 @@
 
 Spark is an amazingly powerful big data engine that's written in Scala.
 
-There are some [awesome Scala style guides](https://github.com/databricks/scala-style-guide) but they cover a lot of advanced language features that aren't frequently encountered by Spark users.  [Haters gonna hate](https://www.reddit.com/r/scala/comments/2ze443/a_good_example_of_a_scala_style_guide_by_people/)!
+This document draws on the Spark source code, the [Spark examples](http://spark.apache.org/examples.html), and popular open source Spark libraries like [spark-testing-base](https://github.com/holdenk/spark-testing-base).
 
-This guide will outline how to format code you'll frequently encounter in Spark.
+Comprehensive Scala style guides already exist, but they cover advanced language features that are not frequently encountered by Spark users.
+
+This guide will outline how to format code you'll frequently encounter in Spark... or try at least...
+
+> Any style guide written in English is either so brief that it’s ambiguous, or so long that no one reads it.
+> - [Bob Nystrom](http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/)
 
 ## <a name='TOC'>Table of Contents</a>
 
+  1. [Scala Style Guides](#scala-style-guides)
   1. [Variables](#variables)
   1. [Chained Method Calls](#chained-method-calls)
   1. [Spark SQL](#spark-sql)
@@ -17,6 +23,17 @@ This guide will outline how to format code you'll frequently encounter in Spark.
   4. [null](#null)
   4. [JAR Files](#jar-files)
   5. [Testing](#testing)
+
+## <a name='scala-style-guides'>Scala Style Guides</a>
+
+There is [an official Scala style guide](http://docs.scala-lang.org/style/) and a [Databricks Scala style guide](https://github.com/databricks/scala-style-guide).  The founder of Databricks is one of the Spark creators and several Databricks engineers are Spark core contributors, so you should follow the Databricks scala-style-guide.
+
+You can create Spark and [haters still gonna hate](https://www.reddit.com/r/scala/comments/2ze443/a_good_example_of_a_scala_style_guide_by_people/)!
+
+### Automated Code Formatting Tools
+
+[Scalafmt](http://scalameta.org/scalafmt/) and [scalariform](https://github.com/scala-ide/scalariform) are automated code formatting tools.  scalariform's default settings format code similar to the Databricks scala-style-guide and is a good place to start.
+
 
 ## <a name='variables'>Variables</a>
 
