@@ -255,7 +255,9 @@ assemblyJarName in assembly := s"${name.value}_2.11-${sparkVersion.value}_${vers
 
 Use the [spark-testing-base](https://github.com/holdenk/spark-testing-base) library for writing tests with Spark.
 
-Test the `#and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
+Instance methods should be preceded with a pound sign (e.g. `#and`) and static methods should be preceded with a period (e.g. `.standardizeName`) in the `describe` block.  This follows [Ruby testing conventions](http://betterspecs.org/#describe).
+
+Here is an example of a test for the `#and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
 
 ```scala
 class FunctionsSpec extends FunSpec with DataFrameSuiteBase {
@@ -275,7 +277,7 @@ class FunctionsSpec extends FunSpec with DataFrameSuiteBase {
 }
 ```
 
-Test static methods as follows:
+Here is an example of a test for the `.standardizeName` static method:
 
 ```scala
 describe(".standardizeName") {
@@ -288,5 +290,3 @@ describe(".standardizeName") {
   
 }
 ```
-
-Instance methods are preceded with a pound sign (e.g. `#and`) and static methods are preceded with a period (e.g. `.standardizeName`) in the `describe` block.  This follows [Ruby testing conventions](http://betterspecs.org/#describe).
