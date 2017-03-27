@@ -218,6 +218,45 @@ com.github.mrpowers.spark.daria.sql.MissingDataFrameColumnsException: The [first
 
 See the [spark-daria](https://github.com/MrPowers/spark-daria) project for a `DataFrameValidator` class that makes it easy to validate the presence of columns in a DataFrame.
 
+### Immutable Columns
+
+Custom transformations shouldn't overwrite an existing field in a schema during a transformation.  Add a new column to a DataFrame instead of mutating the data in an existing column.
+
+Suppose you have a DataFrame with `name` and `nickname` columns and would like a column that coalesces the `name` and `nickname` columns.
+
+```
++-----+--------+
+| name|nickname|
++-----+--------+
+|  joe|    null|
+| null|   crazy|
+|frank|    bull|
++-----+--------+
+```
+
+Don't overwrite the `name` field and create a DataFrame like this:
+
+```
++-----+--------+
+| name|nickname|
++-----+--------+
+|  joe|    null|
+|crazy|   crazy|
+|frank|    bull|
++-----+--------+
+```
+
+Create a new column, so existing columns aren't changed and column immutability is preserved.
+
+```
++-----+--------+---------+
+| name|nickname|name_meow|
++-----+--------+---------+
+|  joe|    null|      joe|
+| null|   crazy|    crazy|
+|frank|    bull|    frank|
++-----+--------+---------+
+```
 
 ## <a name='null'>null</a>
 
