@@ -290,6 +290,14 @@ assemblyJarName in assembly := s"${name.value}_2.11-${sparkVersion.value}_${vers
 
 *TODO* Figure out a better way to include the Scala version than hardcoding it
 
+If you're using `sbt package`, you can add this code to your `build.sbt` file to generate a JAR file that follows the naming conventions.
+
+```scala
+artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
+  artifact.name + "_" + sv.binary + "-" + sparkVersion.value + "_" + module.revision + "." + artifact.extension
+}
+```
+
 ## <a name='testing'>Testing</a>
 
 Use the [spark-testing-base](https://github.com/holdenk/spark-testing-base) library for writing tests with Spark.
