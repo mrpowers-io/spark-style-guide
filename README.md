@@ -15,6 +15,7 @@ This guide will outline how to format code you'll frequently encounter in Spark.
 
   1. [Scala Style Guides](#scala-style-guides)
   1. [Variables](#variables)
+  1. [Columns](#columns)
   1. [Chained Method Calls](#chained-method-calls)
   1. [Spark SQL](#spark-sql)
   2. [Code Organization](#code-organization)
@@ -124,6 +125,15 @@ from people
 """)
 ```
 
+## <a name='columns'>Columns</a>
+
+Columns have a name, type, nullable property, and arbitary metadata.
+
+Columns that contain boolean values should use predicate names like `is_nice_person` or `has_red_hair`.  Use `snake_case` for column names, so it's easier to write SQL code.
+
+Columns should be typed properly.  Don't overuse `StringType` in your schema.
+
+Columns should be nullable if `null` values are allowed and shouldn't be nullable otherwise.  This this an important distinction in your schema - don't be sloppy.
 
 ## <a name='code-organization'>Code Organization</a>
 
