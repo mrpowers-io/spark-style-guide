@@ -4,9 +4,7 @@ Spark is an amazingly powerful big data engine that's written in Scala.
 
 This document draws on the Spark source code, the [Spark examples](http://spark.apache.org/examples.html), and popular open source Spark libraries like [spark-testing-base](https://github.com/holdenk/spark-testing-base).
 
-Comprehensive Scala style guides already exist, but they cover advanced language features that are not frequently encountered by Spark users.
-
-This guide will outline how to format code you'll frequently encounter in Spark... or try at least...
+Comprehensive Scala style guides already exist.  This document focuses specifically on the style issues for Spark programmers.
 
 > Any style guide written in English is either so brief that it’s ambiguous, or so long that no one reads it.
 > - [Bob Nystrom](http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/)
@@ -27,7 +25,7 @@ This guide will outline how to format code you'll frequently encounter in Spark.
 
 ## <a name='scala-style-guides'>Scala Style Guides</a>
 
-There is [an official Scala style guide](http://docs.scala-lang.org/style/) and a [Databricks Scala style guide](https://github.com/databricks/scala-style-guide).  The founder of Databricks is one of the Spark creators and several Databricks engineers are Spark core contributors, so you should follow the Databricks scala-style-guide.
+There is [an official Scala style guide](http://docs.scala-lang.org/style/) and a [Databricks Scala style guide](https://github.com/databricks/scala-style-guide).  The founder of Databricks is one of the Spark creators and several Databricks engineers are Spark core contributors, so you should follow the [Databricks scala-style-guide](https://github.com/databricks/scala-style-guide).
 
 You can create Spark and [haters still gonna hate](https://www.reddit.com/r/scala/comments/2ze443/a_good_example_of_a_scala_style_guide_by_people/)!
 
@@ -103,7 +101,7 @@ val extractDF = spark.read.parquet("someS3Path")
     "name",
     "Date of Birth"
   )
-  .transform(someCustomTransformation)
+  .transform(someCustomTransformation())
   .withColumnRenamed("Date of Birth", "date_of_birth")
   .filter(
     col("date_of_birth") > "1999-01-02"
@@ -112,7 +110,7 @@ val extractDF = spark.read.parquet("someS3Path")
 
 ## <a name='spark-sql'>Spark SQL</a>
 
-Use multiline strings to format SQL code:
+Use multiline strings to write properly indented SQL code:
 
 ```scala
 val coolDF = spark.sql("""
@@ -126,13 +124,13 @@ from people
 
 ## <a name='columns'>Columns</a>
 
-Columns have a name, type, nullable property, and arbitary metadata.
+Columns have name, type, nullable, and metadata properties.
 
 Columns that contain boolean values should use predicate names like `is_nice_person` or `has_red_hair`.  Use `snake_case` for column names, so it's easier to write SQL code.
 
 Columns should be typed properly.  Don't overuse `StringType` in your schema.
 
-Columns should be nullable if `null` values are allowed and shouldn't be nullable otherwise - this this an important distinction in your schema.
+Columns should only be nullable if `null` values are allowed.  Code written for nullable columns should always address `null` values gracefully.
 
 ### Immutable Columns
 
@@ -203,6 +201,24 @@ The `withCat()` custom transformation can be used as follows:
 ```scala
 val niceDF = df.transform(withCat("puffy"))
 ```
+
+### Naming conventions
+
+* `with` precedes transformations that add columns:
+
+  - `withCoolCat()` adds the column `cool_cat` to a DataFrame
+
+  - `withIsNicePerson` adds the column `is_nice_person` to a DataFrame.
+
+* `filter` precedes transformations that remove rows:
+
+  - `filterNegativeGrowthPath()` removes the data rows where the `growth_path` column is negative
+
+  - `filterBadData()` removes the bad data
+
+* `enrich` precedes transformations that clobber columns.  DataFrame transformations should not be clobbered and `enrich` transformations should ideally never be used.
+
+* `explode` precedes transformations that add rows to a DataFrame by "exploding" a row into multiple rows.
 
 ### Schema Dependent DataFrame Transformations
 
@@ -279,10 +295,8 @@ spark-testing-base_scalaVersion-sparkVersion_projectVersion.jar
 If you're using sbt assembly, you can use the following line of code to build a JAR file using the correct naming conventions.
 
 ```scala
-assemblyJarName in assembly := s"${name.value}_2.11-${sparkVersion.value}_${version.value}.jar"
+assemblyJarName in assembly := s"${name.value}_${scalaBinaryVersion.value}-${sparkVersion.value}_${version.value}.jar"
 ```
-
-*TODO* Figure out a better way to include the Scala version than hardcoding it
 
 If you're using `sbt package`, you can add this code to your `build.sbt` file to generate a JAR file that follows the naming conventions.
 
@@ -294,14 +308,16 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 
 ## <a name='testing'>Testing</a>
 
-Use the [spark-fast-tests](https://github.com/MrPowers/spark-fast-tests) library for writing tests with Spark.
+Use the [spark-fast-tests](https://github.com/MrPowers/spark-fast-tests) library for writing DataFrame / Dataset / RDD tests with Spark.  [spark-testing-base](https://github.com/holdenk/spark-testing-base/) should be used for streaming tests.
+
+Read [this blog post for a gentle introduction to testing Spark code](https://medium.com/@mrpowers/testing-spark-applications-8c590d3215fa), [this blog post on how to design easily testable Spark code](https://medium.com/@mrpowers/designing-easily-testable-spark-code-df0755ef00a4), and [this blog post on how to cut the run time of a Spark test suite](https://medium.com/@mrpowers/how-to-cut-the-run-time-of-a-spark-sbt-test-suite-by-40-52d71219773f). 
 
 Instance methods should be preceded with a pound sign (e.g. `#and`) and static methods should be preceded with a period (e.g. `.standardizeName`) in the `describe` block.  This follows [Ruby testing conventions](http://betterspecs.org/#describe).
 
 Here is an example of a test for the `#and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
 
 ```scala
-class FunctionsSpec extends FunSpec with DataFrameSuiteBase {
+class FunctionsSpec extends FunSpec with DataFrameComparer {
 
   import spark.implicits._
 	
