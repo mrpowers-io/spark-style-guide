@@ -18,7 +18,7 @@ This guide will outline how to format code you'll frequently encounter in Spark.
   1. [Columns](#columns)
   1. [Chained Method Calls](#chained-method-calls)
   1. [Spark SQL](#spark-sql)
-  2. [Code Organization](#code-organization)
+  2. [Open Source](#open-source)
   2. [User Defined Functions](#user-defined-functions)
   3. [Custom Transformations](#custom-transformations)
   4. [null](#null)
@@ -34,7 +34,6 @@ You can create Spark and [haters still gonna hate](https://www.reddit.com/r/scal
 ### Automated Code Formatting Tools
 
 [Scalafmt](http://scalameta.org/scalafmt/) and [scalariform](https://github.com/scala-ide/scalariform) are automated code formatting tools.  scalariform's default settings format code similar to the Databricks scala-style-guide and is a good place to start.  The [sbt-scalariform](https://github.com/sbt/sbt-scalariform) plugin automatically reformats code upon compile and is the best way to keep code formatted consistely without thinking.
-
 
 ## <a name='variables'>Variables</a>
 
@@ -133,100 +132,7 @@ Columns that contain boolean values should use predicate names like `is_nice_per
 
 Columns should be typed properly.  Don't overuse `StringType` in your schema.
 
-Columns should be nullable if `null` values are allowed and shouldn't be nullable otherwise.  This this an important distinction in your schema - don't be sloppy.
-
-## <a name='code-organization'>Code Organization</a>
-
-### Write open souce code when possible
-
-You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to Spark Packages / Maven Repository) and forces you to design code without business logic.
-
-The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples of open source functions.
-
-The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
-
-### Prefer UDFs over custom transformations
-
-User defined functions (UDFs) don't have knowledge of the underlying DataFrame schema, so they can be applied more generically than custom transformations.
-
-In the following example, the `ageUDF` can be applied to any two columns in a DataFrame and allows the user name the column that's appended to the DataFrame.
-
-```scala
-peopleDF.withColumn("age", ageUDF($"birth_date", current_date()))
-```
-
-A `withAge` custom transformation will have to make assumptions about the date columns and does not enable the user to customize the name of the column that's appended to the DataFrame.
-
-```scala
-peopleDF.withAge()
-```
-
-You should only fall back to custom transformations when the UDF would take a ton of arguments and be difficult to read / invoke.
-
-Avoid code like this:
-
-```scala
-awesomeDF.withColumn(
-  "secret_sauce",
-  crazyUDF(
-    $"pikachu_mood",
-    $"jigglypuff_song_length",
-    $"argentina_inflation",
-    $"mc_hammer_net_worth"
-  )
-)
-```
-
-Use a readable custom transformation like this:
-
-```scala
-awesomeDF.withSecretSauce()
-```
-
-### Code location preference heirarchy
-
-1. Open source UDFs
-2. Open source custom transformations
-3. Closed source UDFs
-4. Closed source custom transformations
-
-## <a name='user-defined-functions'>User Defined Functions</a>
-
-*Coming soon...*
-
-## <a name='custom-transformations'>Custom transformations</a>
-
-Use multiple parameter lists when defining custom transformations, so you can chain your custom transformations with the `Dataset#transform` method.  Let's disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
-
-You need to use multiple parameter lists to write awesome code like this:
-
-```scala
-def withCat(name: String)(df: DataFrame): DataFrame = {
-  df.withColumn("cats", lit(s"$name meow"))
-}
-```
-
-The `withCat()` custom transformation can be used as follows:
-
-```scala
-val niceDF = df.transform(withCat("puffy"))
-```
-
-### Validating DataFrame dependencies
-
-DataFrame transformations that make schema assumptions should error out if the assumed DataFrame columns aren't present.
-
-Suppose the following `fullName` transformation assumes the `df` has `first_name` and `last_name` columns.
-
-```scala
-val peopleDF = df.transform(fullName)
-```
-
-If the DataFrame doesn't contain the required columns, it should error out with a readable error message:
-
-com.github.mrpowers.spark.daria.sql.MissingDataFrameColumnsException: The [first\_name] columns are not included in the DataFrame with the following columns [last\_name, age, height].
-
-See the [spark-daria](https://github.com/MrPowers/spark-daria) project for a `DataFrameValidator` class that makes it easy to validate the presence of columns in a DataFrame.
+Columns should be nullable if `null` values are allowed and shouldn't be nullable otherwise - this this an important distinction in your schema.
 
 ### Immutable Columns
 
@@ -267,6 +173,84 @@ Create a new column, so existing columns aren't changed and column immutability 
 |frank|    bull|    frank|
 +-----+--------+---------+
 ```
+
+## <a name='open-source'>Open Source</a>
+
+You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to Spark Packages / Maven Repository) and forces you to design code without business logic.
+
+The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples of open source functions.
+
+The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
+
+## <a name='user-defined-functions'>User Defined Functions</a>
+
+*Coming soon...*
+
+## <a name='custom-transformations'>Custom transformations</a>
+
+Use multiple parameter lists when defining custom transformations, so you can chain your custom transformations with the `Dataset#transform` method.  You should disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
+
+You need to use multiple parameter lists to write awesome code like this:
+
+```scala
+def withCat(name: String)(df: DataFrame): DataFrame = {
+  df.withColumn("cats", lit(s"$name meow"))
+}
+```
+
+The `withCat()` custom transformation can be used as follows:
+
+```scala
+val niceDF = df.transform(withCat("puffy"))
+```
+
+### Schema Dependent DataFrame Transformations
+
+Schema dependent DataFrame transformations make assumptions about the underlying DataFrame schema.  Schema dependent DataFrame transformations should explicitly validate DataFrame dependencies to make the code and error messages more readable.
+
+The following `withFullName()` DataFrame transformation assumes that the underlying DataFrame has `first_name` and `last_name` columns.
+
+```scala
+def withFullName()(df: DataFrame): DataFrame = {
+  df.withColumn(
+    "full_name",
+    concat_ws(" ", col("first_name"), col("last_name"))
+  )
+}
+```
+
+You should use [spark-daria](https://github.com/mrpowers/spark-daria) to validate the schema requirements of a DataFrame transformation.
+
+```scala
+def withFullName()(df: DataFrame): DataFrame = {
+  validatePresenceOfColumns(df, Seq("first_name", "last_name"))
+  df.withColumn(
+    "full_name",
+    concat_ws(" ", col("first_name"), col("last_name"))
+  )
+}
+```
+
+See [this blog post](https://medium.com/@mrpowers/validating-spark-dataframe-schemas-28d2b3c69d2a) for a detailed description on validating DataFrame dependencies.
+
+### Schema Independent DataFrame Transformations
+
+Schema independent DataFrame transformations do not depend on the underlying DataFrame schema, as discussed in [this blog post](https://medium.com/@mrpowers/schema-independent-dataframe-transformations-d6b36e12dca6).
+
+```scala
+def withAgePlusOne(
+  ageColName: String,
+  resultColName: String
+)(df: DataFrame): DataFrame = {
+  df.withColumn(resultColName, col(ageColName) + 1)
+}
+```
+
+### What type of DataFrame transformation should be used
+
+Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data lake with a schema that doensn't change).
+
+Schema independent transformations should be run for functions that will be run on a variety of DataFrame schemas.
 
 ## <a name='null'>null</a>
 
@@ -310,7 +294,7 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 
 ## <a name='testing'>Testing</a>
 
-Use the [spark-testing-base](https://github.com/holdenk/spark-testing-base) library for writing tests with Spark.
+Use the [spark-fast-tests](https://github.com/MrPowers/spark-fast-tests) library for writing tests with Spark.
 
 Instance methods should be preceded with a pound sign (e.g. `#and`) and static methods should be preceded with a period (e.g. `.standardizeName`) in the `describe` block.  This follows [Ruby testing conventions](http://betterspecs.org/#describe).
 
