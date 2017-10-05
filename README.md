@@ -79,6 +79,21 @@ def array(cols: Column*)
 
 For methods that take column name `String` arguments, follow the same pattern and use `colName`, `colName1`, `colName2`, and `colNames` as variables.
 
+Collections of things should use plural variable names.
+
+```scala
+var animals = List("dog", "cat", "goose")
+
+// DONT DO THIS
+var animalList = List("dog", "cat", "goose")
+```
+
+Singluar nouns should be used for single objects.
+
+```scala
+val myCarColor = "red"
+```
+
 ## <a name='chained-method-calls'>Chained Method Calls</a>
 
 Spark methods are often deeply chained and should be broken up on multiple lines.
