@@ -147,6 +147,22 @@ Columns should be typed properly.  Don't overuse `StringType` in your schema.
 
 Columns should only be nullable if `null` values are allowed.  Code written for nullable columns should always address `null` values gracefully.
 
+Use acronyms when needed to keep column names short.  Define any acronyms used at the top of the data file, so other programmers can follow along.
+
+Use the following shorthand notation for columns that perform equality comparisons.
+
+* `gt`: greater than
+* `lt`: less than
+* `leq`: less than or equal to
+* `geq`: greater than or equal to
+* `eq`: equal to
+
+Here are some example column names:
+
+* `player_age_gt_20`
+* `player_age_gt_15_leq_30`
+* `player_age_eq_45`
+
 ### Immutable Columns
 
 Custom transformations shouldn't overwrite an existing field in a schema during a transformation.  Add a new column to a DataFrame instead of mutating the data in an existing column.
