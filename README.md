@@ -143,6 +143,8 @@ Columns have name, type, nullable, and metadata properties.
 
 Columns that contain boolean values should use predicate names like `is_nice_person` or `has_red_hair`.  Use `snake_case` for column names, so it's easier to write SQL code.
 
+You can write `(col("is_summer") && col("is_europe"))` instead of `(col("is_summer") === true && col("is_europe") === true)`.  The predicate column names make the concise syntax nice and readable.
+
 Columns should be typed properly.  Don't overuse `StringType` in your schema.
 
 Columns should only be nullable if `null` values are allowed.  Code written for nullable columns should always address `null` values gracefully.
