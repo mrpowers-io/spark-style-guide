@@ -4,7 +4,7 @@ Spark is an amazingly powerful big data engine that's written in Scala.
 
 This document draws on the Spark source code, the [Spark examples](http://spark.apache.org/examples.html), and popular open source Spark libraries like [spark-testing-base](https://github.com/holdenk/spark-testing-base).
 
-Comprehensive Scala style guides already exist.  This document focuses specifically on the style issues for Spark programmers.
+Comprehensive Scala style guides already exist and this document focuses specifically on the style issues for Spark programmers.  Reader beware:
 
 > Any style guide written in English is either so brief that it’s ambiguous, or so long that no one reads it.
 > - [Bob Nystrom](http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/)
@@ -16,19 +16,21 @@ Comprehensive Scala style guides already exist.  This document focuses specifica
   1. [Columns](#columns)
   1. [Chained Method Calls](#chained-method-calls)
   1. [Spark SQL](#spark-sql)
-  2. [Open Source](#open-source)
-  2. [User Defined Functions](#user-defined-functions)
-  3. [Custom Transformations](#custom-transformations)
-  4. [null](#null)
-  4. [JAR Files](#jar-files)
-  4. [Documentation](#documentation)
-  5. [Testing](#testing)
+  1. [Writing Functions](#writing-functions)
+    * [Custom SQL Functions](#custom-sql-functions)
+    * [User Defined Functions](#user-defined-functions)
+    * [Custom Transformations](#custom-transformations)
+  1. [null](#null)
+  1. [JAR Files](#jar-files)
+  1. [Documentation](#documentation)
+  1. [Testing](#testing)
+  1. [Open Source](#open-source)
 
 ## <a name='scala-style-guides'>Scala Style Guides</a>
 
-There is [an official Scala style guide](http://docs.scala-lang.org/style/) and a [Databricks Scala style guide](https://github.com/databricks/scala-style-guide).  The founder of Databricks is one of the Spark creators and several Databricks engineers are Spark core contributors, so you should follow the [Databricks scala-style-guide](https://github.com/databricks/scala-style-guide).
+There is [an official Scala style guide](http://docs.scala-lang.org/style/) and a [Databricks Scala style guide](https://github.com/databricks/scala-style-guide).  The founders of Databricks created Spark, so you should follow the [Databricks scala-style-guide](https://github.com/databricks/scala-style-guide).
 
-You can create Spark and [haters still gonna hate](https://www.reddit.com/r/scala/comments/2ze443/a_good_example_of_a_scala_style_guide_by_people/)!
+You can create an amazing open source project like Spark and [haters still gonna hate](https://www.reddit.com/r/scala/comments/2ze443/a_good_example_of_a_scala_style_guide_by_people/)!
 
 ### Automated Code Formatting Tools
 
@@ -45,7 +47,7 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value
 
 ## <a name='variables'>Variables</a>
 
-Variables should use camelCase.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed accordingly to make your code readable:
+Variables should use camelCase.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed to make your code readable:
 
 * Variables pointing to DataFrames should be suffixed with `DF` (following conventions in the [Spark Programming Guide](http://spark.apache.org/docs/latest/sql-programming-guide.html))
 
@@ -87,9 +89,15 @@ Use `cols` for methods that take an arbitrary number of `Column` arguments.
 def array(cols: Column*)
 ```
 
-For methods that take column name `String` arguments, follow the same pattern and use `colName`, `colName1`, `colName2`, and `colNames` as variables.
+Use `colName` for methods that take a `String` argument that refers to the name of a `Column`.
 
-Collections of things should use plural variable names.
+```scala
+def sqrt(colName: String): Column
+```
+
+Use `colName1` and `colName2` for methods that take multiple column name arguments.
+
+Collections should use plural variable names.
 
 ```scala
 var animals = List("dog", "cat", "goose")
@@ -153,7 +161,7 @@ Columns have name, type, nullable, and metadata properties.
 
 Columns that contain boolean values should use predicate names like `is_nice_person` or `has_red_hair`.  Use `snake_case` for column names, so it's easier to write SQL code.
 
-You can write `(col("is_summer") && col("is_europe"))` instead of `(col("is_summer") === true && col("is_europe") === true)`.  The predicate column names make the concise syntax nice and readable.
+You can write `(col("is_summer") && col("is_europe"))` instead of `(col("is_summer") === true && col("is_europe") === true)`.  The predicate column names make the concise syntax readable.
 
 Columns should be typed properly.  Don't overuse `StringType` in your schema.
 
@@ -205,7 +213,7 @@ Don't overwrite the `name` field and create a DataFrame like this:
 +-----+--------+
 ```
 
-Create a new column, so existing columns aren't changed and column immutability is preserved.
+Create a new column, so column immutability is preserved.
 
 ```
 +-----+--------+---------+
@@ -217,19 +225,17 @@ Create a new column, so existing columns aren't changed and column immutability 
 +-----+--------+---------+
 ```
 
-## <a name='open-source'>Open Source</a>
+## <a name='writing-functions'>Writing functions</a>
 
-You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to Spark Packages / Maven Repository) and forces you to design code without business logic.
-
-The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples of open source functions.
-
-The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
-
-## <a name='user-defined-functions'>User Defined Functions</a>
+### <a name='custom-sql-functions'>Custom SQL Functions</a>
 
 *Coming soon...*
 
-## <a name='custom-transformations'>Custom transformations</a>
+### <a name='user-defined-functions'>User Defined Functions</a>
+
+*Coming soon...*
+
+### <a name='custom-transformations'>Custom transformations</a>
 
 Use multiple parameter lists when defining custom transformations, so you can chain your custom transformations with the `Dataset#transform` method.  You should disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
 
@@ -247,7 +253,7 @@ The `withCat()` custom transformation can be used as follows:
 val niceDF = df.transform(withCat("puffy"))
 ```
 
-### Naming conventions
+#### Naming conventions
 
 * `with` precedes transformations that add columns:
 
@@ -265,7 +271,7 @@ val niceDF = df.transform(withCat("puffy"))
 
 * `explode` precedes transformations that add rows to a DataFrame by "exploding" a row into multiple rows.
 
-### Schema Dependent DataFrame Transformations
+#### Schema Dependent DataFrame Transformations
 
 Schema dependent DataFrame transformations make assumptions about the underlying DataFrame schema.  Schema dependent DataFrame transformations should explicitly validate DataFrame dependencies to make the code and error messages more readable.
 
@@ -294,7 +300,7 @@ def withFullName()(df: DataFrame): DataFrame = {
 
 See [this blog post](https://medium.com/@mrpowers/validating-spark-dataframe-schemas-28d2b3c69d2a) for a detailed description on validating DataFrame dependencies.
 
-### Schema Independent DataFrame Transformations
+#### Schema Independent DataFrame Transformations
 
 Schema independent DataFrame transformations do not depend on the underlying DataFrame schema, as discussed in [this blog post](https://medium.com/@mrpowers/schema-independent-dataframe-transformations-d6b36e12dca6).
 
@@ -307,7 +313,7 @@ def withAgePlusOne(
 }
 ```
 
-### What type of DataFrame transformation should be used
+#### What type of DataFrame transformation should be used
 
 Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data lake with a schema that doensn't change).
 
@@ -486,3 +492,13 @@ describe(".standardizeName") {
   
 }
 ```
+
+## <a name='open-source'>Open Source</a>
+
+You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to Maven) and forces you to design code without business logic.
+
+The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) class provides some great examples of open source functions.
+
+The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
+
+[spark-daria](https://github.com/MrPowers/spark-daria) is a good example of a Spark open source library that provides core extensions, like [these Column extensions](https://github.com/MrPowers/spark-daria/blob/master/src/main/scala/com/github/mrpowers/spark/daria/sql/ColumnExt.scala).
