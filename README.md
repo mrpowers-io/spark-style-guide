@@ -2,7 +2,7 @@
 
 Spark is an amazingly powerful big data engine that's written in Scala.
 
-This document draws on the Spark source code, the [Spark examples](http://spark.apache.org/examples.html), and popular open source Spark libraries like [spark-testing-base](https://github.com/holdenk/spark-testing-base).
+This document draws on the Spark source code, the [Spark examples](http://spark.apache.org/examples.html), and popular open source Spark libraries  to outline coding conventions and best practices.
 
 Comprehensive Scala style guides already exist and this document focuses specifically on the style issues for Spark programmers.  Reader beware:
 
@@ -11,20 +11,20 @@ Comprehensive Scala style guides already exist and this document focuses specifi
 
 ## <a name='TOC'>Table of Contents</a>
 
-  1. [Scala Style Guides](#scala-style-guides)
-  1. [Variables](#variables)
-  1. [Columns](#columns)
-  1. [Chained Method Calls](#chained-method-calls)
-  1. [Spark SQL](#spark-sql)
-  1. [Writing Functions](#writing-functions)
+1. [Scala Style Guides](#scala-style-guides)
+1. [Variables](#variables)
+1. [Columns](#columns)
+1. [Chained Method Calls](#chained-method-calls)
+1. [Spark SQL](#spark-sql)
+1. [Writing Functions](#writing-functions)
     * [Custom SQL Functions](#custom-sql-functions)
     * [User Defined Functions](#user-defined-functions)
     * [Custom Transformations](#custom-transformations)
-  1. [null](#null)
-  1. [JAR Files](#jar-files)
-  1. [Documentation](#documentation)
-  1. [Testing](#testing)
-  1. [Open Source](#open-source)
+1. [null](#null)
+1. [JAR Files](#jar-files)
+1. [Documentation](#documentation)
+1. [Testing](#testing)
+1. [Open Source](#open-source)
 
 ## <a name='scala-style-guides'>Scala Style Guides</a>
 
