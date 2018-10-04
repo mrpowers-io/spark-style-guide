@@ -229,11 +229,53 @@ Create a new column, so column immutability is preserved.
 
 ### <a name='custom-sql-functions'>Custom SQL Functions</a>
 
-*Coming soon...*
+Here's an example of a custom SQL function that returns `child` when the age is less than 13, `teenager` when the age is between 13 and 18, and `adult` when the age is above 18.
+
+```scala
+import org.apache.spark.sql.Column
+
+def lifeStage(col: Column): Column = {
+  when(col < 13, "child")
+    .when(col >= 13 && col <= 18, "teenager")
+    .when(col > 18, "adult")
+}
+```
+
+The `lifeStage()` function will return `null` when `col` is `null`.  All built-in Spark functions gracefully handle the `null` case, so we don't need to write explicit `null` logic in the `lifeStage()` function.
+
+Custom SQL functions can also be optimized by the Spark compiler, so this is a good way to write code.  Read [this blog post](https://www.mungingdata.com/apache-spark/spark-sql-functions) for a full discussion on custom SQL functions.
 
 ### <a name='user-defined-functions'>User Defined Functions</a>
 
-*Coming soon...*
+You can write User Defined Functions (UDFs) When the native Spark API isn't sufficient and you need to write code that leverages advanced Scala programming features or Java libraries.
+
+Here's an example of a UDF that downcases all the characters and removes all the whitespace of a string:
+
+
+```scala
+def betterLowerRemoveAllWhitespace(s: String): Option[String] = {
+  val str = Option(s).getOrElse(return None)
+  Some(str.toLowerCase().replaceAll("\\s", ""))
+}
+
+val betterLowerRemoveAllWhitespaceUDF = udf[Option[String], String](betterLowerRemoveAllWhitespace)
+```
+
+The `betterLowerRemoveAllWhitespace()` function explicity handles `null` input, so the function won't error out with a `NullPointerException`.  You should always write UDFs that handle `null` input gracefully.
+
+In this case, a custom SQL function can provide the same functionality, but with less code:
+
+```scala
+def bestLowerRemoveAllWhitespace()(col: Column): Column = {
+  lower(regexp_replace(col, "\\s+", ""))
+}
+```
+
+UDFs [are a black box](https://jaceklaskowski.gitbooks.io/mastering-spark-sql/spark-sql-udfs-blackbox.html) from the Spark compiler's perspective and should be avoided whenever possible.
+
+Most logic can be coded as a custom SQL function.  Only revert to UDFs when the native Spark API isn't sufficient.
+
+See [this blog post](https://medium.com/@mrpowers/spark-user-defined-functions-udfs-6c849e39443b) for more information about UDFs.
 
 ### <a name='custom-transformations'>Custom transformations</a>
 
