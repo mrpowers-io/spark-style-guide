@@ -247,9 +247,9 @@ Custom SQL functions can also be optimized by the Spark compiler, so this is a g
 
 ### <a name='user-defined-functions'>User Defined Functions</a>
 
-You can write User Defined Functions (UDFs) When the native Spark API isn't sufficient and you need to write code that leverages advanced Scala programming features or Java libraries.
+You can write User Defined Functions (UDFs) when you need to write code that leverages advanced Scala programming features or Java libraries.
 
-Here's an example of a UDF that downcases all the characters and removes all the whitespace of a string:
+Here's an example of a UDF that downcases and removes the whitespace of a string:
 
 
 ```scala
@@ -279,7 +279,7 @@ See [this blog post](https://medium.com/@mrpowers/spark-user-defined-functions-u
 
 ### <a name='custom-transformations'>Custom transformations</a>
 
-Use multiple parameter lists when defining custom transformations, so you can chain your custom transformations with the `Dataset#transform` method.  You should disregard this advice from the Databricks Scala style guide: "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala."
+Use multiple parameter lists when defining custom transformations, so they can be chained with the `Dataset#transform` method.  The Databricks Scala style guide says to "Avoid using multiple parameter lists. They complicate operator overloading, and can confuse programmers less familiar with Scala", but this suggestion should be ignored when writing custom DataFrame transformations.
 
 You need to use multiple parameter lists to write awesome code like this:
 
@@ -367,9 +367,9 @@ Schema independent transformations should be run for functions that will be run 
 
 Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
 
-In general, it's better to keep all `null` references out of code and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitve code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.
+In general, it's better to keep all `null` references out of UDFs and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitve code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.  Or better yet, avoid using UDFs completely so you don't have to either `None` or `null` in your code.
 
-The schema for a column should set nullable to `false` if the column should not take `null` values.
+The nullable property of a column should be set to `false` if the column should not take `null` values.
 
 ## <a name='jar-files'>JAR Files</a>
 
@@ -495,20 +495,18 @@ Custom transformations can add/remove rows and columns from a DataFrame.  DataFr
 
 ## <a name='testing'>Testing</a>
 
-Use the [spark-fast-tests](https://github.com/MrPowers/spark-fast-tests) library for writing DataFrame / Dataset / RDD tests with Spark.  [spark-testing-base](https://github.com/holdenk/spark-testing-base/) should be used for streaming tests.
+Use the [spark-fast-tests](https://github.com/MrPowers/spark-fast-tests) library for writing DataFrame / Dataset / RDD tests with Spark.
 
 Read [this blog post for a gentle introduction to testing Spark code](https://medium.com/@mrpowers/testing-spark-applications-8c590d3215fa), [this blog post on how to design easily testable Spark code](https://medium.com/@mrpowers/designing-easily-testable-spark-code-df0755ef00a4), and [this blog post on how to cut the run time of a Spark test suite](https://medium.com/@mrpowers/how-to-cut-the-run-time-of-a-spark-sbt-test-suite-by-40-52d71219773f). 
 
-Instance methods should be preceded with a pound sign (e.g. `#and`) and static methods should be preceded with a period (e.g. `.standardizeName`) in the `describe` block.  This follows [Ruby testing conventions](http://betterspecs.org/#describe).
-
-Here is an example of a test for the `#and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
+Here is an example of a test for the `and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
 
 ```scala
 class FunctionsSpec extends FunSpec with DataFrameComparer {
 
   import spark.implicits._
 	
-  describe("#and") {
+  describe("and") {
 	
     it ("returns true if both columns are true") {
 	
@@ -518,20 +516,6 @@ class FunctionsSpec extends FunSpec with DataFrameComparer {
     
   }
 	
-}
-```
-
-Here is an example of a test for the `.standardizeName` static method:
-
-```scala
-describe(".standardizeName") {
-
-  it("consistenly formats the name") {
-  
-    // some code
-    
-  }
-  
 }
 ```
 
