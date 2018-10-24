@@ -373,7 +373,11 @@ The nullable property of a column should be set to `false` if the column should 
 
 ## <a name='jar-files'>JAR Files</a>
 
-JAR files should be named like this:
+You can build projects that support multiple Spark versions or just a single Spark version.
+
+### Projects that support a single Spark version
+
+JAR files built for a specific Spark version should be named like this:
 
 ```
 spark-testing-base_2.11-2.1.0_0.6.0.jar
@@ -398,6 +402,36 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   artifact.name + "_" + sv.binary + "-" + sparkVersion.value + "_" + module.revision + "." + artifact.extension
 }
 ```
+
+### Projects that support multiple Spark versions
+
+JAR files built for multiple Spark version should be named like this:
+
+```
+spark-testing-base_2.11-0.6.0.jar
+```
+
+Generically:
+
+```
+spark-testing-base_scalaVersion-projectVersion.jar
+```
+
+If you're using sbt assembly, you can use the following line of code to build a JAR file using the correct naming conventions.
+
+```scala
+assemblyJarName in assembly := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
+```
+
+If you're using `sbt package`, you can add this code to your `build.sbt` file to generate a JAR file that follows the naming conventions.
+
+```scala
+artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
+  artifact.name + "_" + sv.binary + "-" + module.revision + "." + artifact.extension
+}
+```
+
+Create a table in the project README that indicates all the Spark versions supported by each project version.
 
 ## <a name='documentation'>Documentation</a>
 
@@ -497,7 +531,7 @@ Custom transformations can add/remove rows and columns from a DataFrame.  DataFr
 
 Use the [spark-fast-tests](https://github.com/MrPowers/spark-fast-tests) library for writing DataFrame / Dataset / RDD tests with Spark.
 
-Read [this blog post for a gentle introduction to testing Spark code](https://medium.com/@mrpowers/testing-spark-applications-8c590d3215fa), [this blog post on how to design easily testable Spark code](https://medium.com/@mrpowers/designing-easily-testable-spark-code-df0755ef00a4), and [this blog post on how to cut the run time of a Spark test suite](https://medium.com/@mrpowers/how-to-cut-the-run-time-of-a-spark-sbt-test-suite-by-40-52d71219773f). 
+Read [this blog post for a gentle introduction to testing Spark code](https://medium.com/@mrpowers/testing-spark-applications-8c590d3215fa), [this blog post on how to design easily testable Spark code](https://medium.com/@mrpowers/designing-easily-testable-spark-code-df0755ef00a4), and [this blog post on how to cut the run time of a Spark test suite](https://medium.com/@mrpowers/how-to-cut-the-run-time-of-a-spark-sbt-test-suite-by-40-52d71219773f).
 
 Here is an example of a test for the `and` instance method defined in the [functions class](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/functions.html) as follows:
 
@@ -505,17 +539,17 @@ Here is an example of a test for the `and` instance method defined in the [funct
 class FunctionsSpec extends FunSpec with DataFrameComparer {
 
   import spark.implicits._
-	
+
   describe("and") {
-	
+
     it ("returns true if both columns are true") {
-	
+
       // some code
-	
+
     }
-    
+
   }
-	
+
 }
 ```
 
