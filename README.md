@@ -34,7 +34,7 @@ You can create an amazing open source project like Spark and [haters still gonna
 
 ### Automated Code Formatting Tools
 
-[Scalafmt](http://scalameta.org/scalafmt/) and [scalariform](https://github.com/scala-ide/scalariform) are automated code formatting tools.  scalariform's default settings format code similar to the Databricks scala-style-guide and is a good place to start.  The [sbt-scalariform](https://github.com/sbt/sbt-scalariform) plugin automatically reformats code upon compile and is the best way to keep code formatted consistely without thinking.  Here are some scalariform settings that work well with Spark code.
+[Scalafmt](http://scalameta.org/scalafmt/) and [scalariform](https://github.com/scala-ide/scalariform) are automated code formatting tools.  scalariform's default settings format code similar to the Databricks scala-style-guide and is a good place to start.  The [sbt-scalariform](https://github.com/sbt/sbt-scalariform) plugin automatically reformats code upon compile and is the best way to keep code formatted consistently without thinking.  Here are some scalariform settings that work well with Spark code.
 
 ```scala
 SbtScalariform.scalariformSettings
@@ -106,7 +106,7 @@ var animals = List("dog", "cat", "goose")
 var animalList = List("dog", "cat", "goose")
 ```
 
-Singluar nouns should be used for single objects.
+Singular nouns should be used for single objects.
 
 ```scala
 val myCarColor = "red"
@@ -261,7 +261,7 @@ def betterLowerRemoveAllWhitespace(s: String): Option[String] = {
 val betterLowerRemoveAllWhitespaceUDF = udf[Option[String], String](betterLowerRemoveAllWhitespace)
 ```
 
-The `betterLowerRemoveAllWhitespace()` function explicity handles `null` input, so the function won't error out with a `NullPointerException`.  You should always write UDFs that handle `null` input gracefully.
+The `betterLowerRemoveAllWhitespace()` function explicitly handles `null` input, so the function won't error out with a `NullPointerException`.  You should always write UDFs that handle `null` input gracefully.
 
 In this case, a custom SQL function can provide the same functionality, but with less code:
 
@@ -357,7 +357,7 @@ def withAgePlusOne(
 
 #### What type of DataFrame transformation should be used
 
-Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data lake with a schema that doensn't change).
+Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data lake with a schema that doesn't change).
 
 Schema independent transformations should be run for functions that will be run on a variety of DataFrame schemas.
 
@@ -367,7 +367,7 @@ Schema independent transformations should be run for functions that will be run 
 
 Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
 
-In general, it's better to keep all `null` references out of UDFs and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitve code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.  Or better yet, avoid using UDFs completely so you don't have to either `None` or `null` in your code.
+In general, it's better to keep all `null` references out of UDFs and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitive code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.  Or better yet, avoid using UDFs completely so you don't have to either `None` or `null` in your code.
 
 The nullable property of a column should be set to `false` if the column should not take `null` values.
 
@@ -450,7 +450,7 @@ def rpad(str: Column, len: Int, pad: String): Column = withExpr {
 }
 ```
 
-Here's an example of the the `Column#equalTo()` method that contains an example code snippet.
+Here's an example of the `Column#equalTo()` method that contains an example code snippet.
 
 ```scala
 /**
@@ -472,7 +472,7 @@ def equalTo(other: Any): Column = this === other
 
 The `@since` annotation should be used to document when features are added to the API.
 
-The `@note` annotaion should be used to detail important information about a function, like the following example.
+The `@note` annotation should be used to detail important information about a function, like the following example.
 
 ```scala
 /**
