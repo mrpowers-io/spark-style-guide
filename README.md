@@ -34,15 +34,12 @@ You can create an amazing open source project like Spark and [haters still gonna
 
 ### Automated Code Formatting Tools
 
-[Scalafmt](http://scalameta.org/scalafmt/) and [scalariform](https://github.com/scala-ide/scalariform) are automated code formatting tools.  scalariform's default settings format code similar to the Databricks scala-style-guide and is a good place to start.  The [sbt-scalariform](https://github.com/sbt/sbt-scalariform) plugin automatically reformats code upon compile and is the best way to keep code formatted consistently without thinking.  Here are some scalariform settings that work well with Spark code.
+[Scalafmt](http://scalameta.org/scalafmt/) is the best Scala code formatter.  Stick with the default style settings as much as possible.  Here are some customizations that work well for Spark projects (add these to the `.scalafmt.conf` file):
 
-```scala
-SbtScalariform.scalariformSettings
-
-ScalariformKeys.preferences := ScalariformKeys.preferences.value
-  .setPreference(DoubleIndentConstructorArguments, true)
-  .setPreference(SpacesAroundMultiImports, false)
-  .setPreference(DanglingCloseParenthesis, Force)
+```
+align = more
+maxColumn = 150
+docstrings = JavaDoc
 ```
 
 ## <a name='variables'>Variables</a>
@@ -50,7 +47,6 @@ ScalariformKeys.preferences := ScalariformKeys.preferences.value
 Variables should use camelCase.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed to make your code readable:
 
 * Variables pointing to DataFrames should be suffixed with `DF` (following conventions in the [Spark Programming Guide](http://spark.apache.org/docs/latest/sql-programming-guide.html))
-
 
 ```scala
 peopleDF.createOrReplaceTempView("people")
@@ -102,7 +98,7 @@ Collections should use plural variable names.
 ```scala
 var animals = List("dog", "cat", "goose")
 
-// DONT DO THIS
+// DON'T DO THIS
 var animalList = List("dog", "cat", "goose")
 ```
 
@@ -130,15 +126,10 @@ Here's an example of a well formatted extract:
 
 ```scala
 val extractDF = spark.read.parquet("someS3Path")
-  .select(
-    "name",
-    "Date of Birth"
-  )
+  .select("name", "Date of Birth")
   .transform(someCustomTransformation())
   .withColumnRenamed("Date of Birth", "date_of_birth")
-  .filter(
-    col("date_of_birth") > "1999-01-02"
-  )
+  .filter(col("date_of_birth") > "1999-01-02")
 ```
 
 ## <a name='spark-sql'>Spark SQL</a>
@@ -562,3 +553,4 @@ The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/j
 The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
 
 [spark-daria](https://github.com/MrPowers/spark-daria) is a good example of a Spark open source library that provides core extensions, like [these Column extensions](https://github.com/MrPowers/spark-daria/blob/master/src/main/scala/com/github/mrpowers/spark/daria/sql/ColumnExt.scala).
+
