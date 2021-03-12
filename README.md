@@ -4,6 +4,8 @@ Spark is an amazingly powerful big data engine that's written in Scala.
 
 This document draws on the Spark source code, the [Spark examples](http://spark.apache.org/examples.html), and popular open source Spark libraries  to outline coding conventions and best practices.
 
+See the [PySpark style guide](https://github.com/MrPowers/spark-style-guide/blob/main/PYSPARK_STYLE_GUIDE.md) if you're using the Python API.
+
 Comprehensive Scala style guides already exist and this document focuses specifically on the style issues for Spark programmers.  Reader beware:
 
 > Any style guide written in English is either so brief that it’s ambiguous, or so long that no one reads it.
@@ -42,6 +44,8 @@ maxColumn = 150
 docstrings = JavaDoc
 ```
 
+Scala code is annoying to format manually and your team should have an automated solution.
+
 ## <a name='variables'>Variables</a>
 
 Variables should use camelCase.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed to make your code readable:
@@ -66,6 +70,8 @@ val stringsDS = sqlDF.map {
 ```scala
 val peopleRDD = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
 ```
+
+Suffixing types is less important in version controlled codebases that allow for IDE-grade type support.  This is more important when working in Databricks notebooks without type hints.
 
 Use the variable `col` for `Column` arguments.
 
@@ -92,6 +98,10 @@ def sqrt(colName: String): Column
 ```
 
 Use `colName1` and `colName2` for methods that take multiple column name arguments.
+
+The `org.apache.spark.sql.functions` do not use consistent variable names, which is annoying.
+
+![inconsistent variable names](https://github.com/MrPowers/spark-style-guide/blob/main/images/argument_names.png)
 
 Collections should use plural variable names.
 
@@ -134,7 +144,20 @@ val extractDF = spark.read.parquet("someS3Path")
 
 ## <a name='spark-sql'>Spark SQL</a>
 
-Use multiline strings to write properly indented SQL code:
+If you're using a text editor, you can write multiline strings like this:
+
+```scala
+val coolDF = spark.sql(
+  """
+    |select
+    |  `first_name`,
+    |  `last_name`,
+    |  `hair_color`
+    |from people
+    |""".stripMargin)
+```
+
+Managing the pipes is tedious in notebooks that don't offer IDE-grade text editing support.  In notebooks, it's better to write multiline SQL code like this:
 
 ```scala
 val coolDF = spark.sql("""
@@ -160,7 +183,7 @@ Columns should only be nullable if `null` values are allowed.  Code written for 
 
 Use acronyms when needed to keep column names short.  Define any acronyms used at the top of the data file, so other programmers can follow along.
 
-Use the following shorthand notation for columns that perform  comparisons.
+Use the following shorthand notation for columns that perform comparisons.
 
 * `gt`: greater than
 * `lt`: less than
