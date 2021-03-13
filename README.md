@@ -27,6 +27,7 @@ Comprehensive Scala style guides already exist and this document focuses specifi
 1. [Documentation](#documentation)
 1. [Testing](#testing)
 1. [Open Source](#open-source)
+1. [Best Practices](#best-practices)
 
 ## <a name='scala-style-guides'>Scala Style Guides</a>
 
@@ -201,9 +202,9 @@ Here are some example column names:
 
 ### Immutable Columns
 
-Custom transformations shouldn't overwrite an existing field in a schema during a transformation.  Add a new column to a DataFrame instead of mutating the data in an existing column.
+Custom transformations shouldn't overwrite an existing field in a schema during a transformation.  Add a new column to a DataFrame instead of mutating the data in an existing column.  DataFrames are technically immutable, but overwriting a column feels like a mutation ;)
 
-Suppose you have a DataFrame with `name` and `nickname` columns and would like a column that coalesces the `name` and `nickname` columns.
+Suppose you and would like to coalesce the `name` and `nickname` columns in a DataFrame, here's the sample data.
 
 ```
 +-----+--------+
@@ -215,7 +216,7 @@ Suppose you have a DataFrame with `name` and `nickname` columns and would like a
 +-----+--------+
 ```
 
-Don't overwrite the `name` field and create a DataFrame like this:
+Don't run `df.withColumn("name", coalesce($"name", $"nickname"))` and overwrite the `name` field and create a DataFrame like this:
 
 ```
 +-----+--------+
@@ -227,7 +228,7 @@ Don't overwrite the `name` field and create a DataFrame like this:
 +-----+--------+
 ```
 
-Create a new column, so column immutability is preserved.
+It's better to preserve column immutability by creating a new column.
 
 ```
 +-----+--------+---------+
@@ -576,4 +577,16 @@ The [`org.apache.spark.sql.functions`](https://spark.apache.org/docs/2.1.0/api/j
 The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Dataset.html) and [`Column`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sql/Column.html) classes provide great examples of code that facilitates DataFrame transformations.
 
 [spark-daria](https://github.com/MrPowers/spark-daria) is a good example of a Spark open source library that provides core extensions, like [these Column extensions](https://github.com/MrPowers/spark-daria/blob/master/src/main/scala/com/github/mrpowers/spark/daria/sql/ColumnExt.scala).
+
+## <a name='best-practices'>Best Practices</a>
+
+* Limit project dependencies and inspect transitive dependencies closely.  Scala dependency hell is painful.
+* Cross compile projects with multiple Scala versions, when appropriate, to make upgrading easier (e.g. it was good to cross compile with Scala 2.11 and Scala 2.12 for Spark 2.4 projects).
+* Avoid advanced Scala features
+* Write code that's easy to copy and paste in notebooks
+* Organize code into column functions and custom transformations whenever possible
+* Write code in version controlled projects, so you can take advantage of text editor features (and not pay for an expensive cluster when developing)
+* Constantly bump SBT versions (it updates frequently)
+
+Read [Beautiful Spark](https://leanpub.com/beautiful-spark) for more information about Spark project best practices.
 
