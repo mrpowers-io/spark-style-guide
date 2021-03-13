@@ -324,23 +324,23 @@ val niceDF = df.transform(withCat("puffy"))
 
   - `withCoolCat()` adds the column `cool_cat` to a DataFrame
 
-  - `withIsNicePerson` adds the column `is_nice_person` to a DataFrame.
+  - `withIsNicePerson()` adds the column `is_nice_person` to a DataFrame.
 
 * `filter` precedes transformations that remove rows:
 
-  - `filterNegativeGrowthPath()` removes the data rows where the `growth_path` column is negative
+  - `filterNegativeGrowthRate()` removes the data rows where the `growth_rate` column is negative
 
-  - `filterBadData()` removes the bad data
+  - `filterInvalidZipCodes()` removes the data with a malformed `zip_code`
 
-* `enrich` precedes transformations that clobber columns.  DataFrame transformations should not be clobbered and `enrich` transformations should ideally never be used.
+* `enrich` precedes transformations that clobber columns.  Clobbing columns should be avoided when possible, so `enrich` transformations should only be used in rare circumstances.
 
 * `explode` precedes transformations that add rows to a DataFrame by "exploding" a row into multiple rows.
 
 #### Schema Dependent DataFrame Transformations
 
-Schema dependent DataFrame transformations make assumptions about the underlying DataFrame schema.  Schema dependent DataFrame transformations should explicitly validate DataFrame dependencies to make the code and error messages more readable.
+Schema dependent DataFrame transformations make assumptions about the underlying DataFrame schema.  Schema dependent DataFrame transformations should explicitly validate DataFrame dependencies to clarify intentions of the code and provide readable error messages.
 
-The following `withFullName()` DataFrame transformation assumes that the underlying DataFrame has `first_name` and `last_name` columns.
+The following `withFullName()` DataFrame transformation assumes the underlying DataFrame has `first_name` and `last_name` columns.
 
 ```scala
 def withFullName()(df: DataFrame): DataFrame = {
@@ -363,7 +363,21 @@ def withFullName()(df: DataFrame): DataFrame = {
 }
 ```
 
+Notice how the refactored function makes it clear that this function requires `first_name` and `last_name` columns to run properly.
+
 See [this blog post](https://medium.com/@mrpowers/validating-spark-dataframe-schemas-28d2b3c69d2a) for a detailed description on validating DataFrame dependencies.
+
+You can also refactor the custom transformation to remove the column name dependency:
+
+```scala
+def withFullName(firstColName: String, lastColName: String)(df: DataFrame): DataFrame = {
+  validatePresenceOfColumns(df, Seq(firstColName, lastColName))
+  df.withColumn(
+    "full_name",
+    concat_ws(" ", col(firstColName), col(lastColName))
+  )
+}
+```
 
 #### Schema Independent DataFrame Transformations
 
@@ -378,11 +392,25 @@ def withAgePlusOne(
 }
 ```
 
+The `withAgePlusOne` allows users to pass in column names, so the function can be applied to DataFrames with different schemas.
+
+Schema independent DataFrame transformations also allow for column validations, so they output readable error messages.
+
+```scala
+def withAgePlusOne(
+  ageColName: String,
+  resultColName: String
+)(df: DataFrame): DataFrame = {
+  validatePresenceOfColumns(df, Seq(ageColName, resultColName))
+  df.withColumn(resultColName, col(ageColName) + 1)
+}
+```
+
 #### What type of DataFrame transformation should be used
 
 Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data lake with a schema that doesn't change).
 
-Schema independent transformations should be run for functions that will be run on a variety of DataFrame schemas.
+Schema independent transformations should be run for functions that will be run on DataFrames with different schemas
 
 ## <a name='null'>null</a>
 
@@ -390,13 +418,109 @@ Schema independent transformations should be run for functions that will be run 
 
 Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
 
-In general, it's better to keep all `null` references out of UDFs and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitive code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.  Or better yet, avoid using UDFs completely so you don't have to either `None` or `null` in your code.
+Let's revisit the `withFullName` function from earlier:
+
+```scala
+def withFullName()(df: DataFrame): DataFrame = {
+  df.withColumn(
+    "full_name",
+    concat_ws(" ", col("first_name"), col("last_name"))
+  )
+}
+```
+
+`withFullName` returns `null` if either the `first_name` or `last_name` column is `null`.  Let's take a look at an example:
+
+ADD EXAMPLE
 
 The nullable property of a column should be set to `false` if the column should not take `null` values.
 
+### UDF null guidance
+
+In general, it's better to keep all `null` references out of UDFs and use `Option[T]` instead.  `Option` is a bit slower and explicit `null` references may be required for performance sensitive code.  Start with `Option` and only use explicit `null` references if `Option` becomes a performance bottleneck.  Or better yet, avoid using UDFs completely so you don't have to either `None` or `null` in your code.
+
+### Scala purists
+
+ADD discussion
+
+### Test suites
+
+`null` is used extensively in test suites when constructing DataFrames.
+
+ADD DISUSSION
+
 ## <a name='jar-files'>JAR Files</a>
 
-You can build projects that support multiple Spark versions or just a single Spark version.
+JAR files package Spark projects, so the code can be executed in runtimes like EMR or Databricks.
+
+This section discusses complexities of managing JAR files for Spark projects:
+
+* fat / thin JAR files
+* Cross compiling Scala versions
+* Supporting multiple Spark versions
+
+### Fat / thin JAR files
+
+You can build thin JAR files with `sbt package` or fat JAR files with `sbt assembly`.
+
+Fat JAR files include code for project dependencies.  Fat JAR files are usually more useful for Spark projects.  Suppose your project has the following dependencies:
+
+* Scala
+* Spark
+* Scalatest
+* spark-daria
+
+You won't want to included Scala, Spark, or Scalatest in your JAR file.  Scala and Spark will already be installed on your Spark runtime and you don't need Scalatest to run production code.  Here's how you should add these dependencies to your `build.sbt` file to only include `spark-daria` and your application code in the fat JAR file.
+
+```
+libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.1.0" % "provided"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+libraryDependencies += "com.github.mrpowers" %% "spark-daria" % "0.38.2"
+```
+
+`spark-sql` isn't included in the `sbt assembly` generated JAR cause it's a provided dependency and `scalatest` won't be included because it'ss a test dependency.
+
+Read [this post](https://mungingdata.com/apache-spark/building-jar-sbt/) for more information about building Spark JAR files.  [This post on shading dependencies](https://mungingdata.com/apache-spark/shading-dependencies-with-sbt/) describes a powerful JAR building technique that helps avoid dependency conflicts.
+
+### Cross compiling Scala versions
+
+Different versions of Spark support different versions of Scala.
+
+* Spark 2.3 only supports Scala 2.11
+* Spark 2.4 supports Scala 2.11 and Scala 2.12
+* Spark 3.0 only supports Scala 2.12
+
+Spark versions that support multiple versions of Scala (e.g. Spark 2.4) can be cross compiled, meaning JAR files for both Scala 2.11 and Scala 2.12 are generated.
+
+Cross compiling is a good idea so you get out ahead of any Scala changes that are breaking for your projects.  If you built your Scala 2.4 projects with both Scala 2.11 and Scala 2.12, then you were already halfway towards upgrading to Spark 3.0.  Folks that didn't cross compile had to upgrade both their Scala & Spark verions when migrating to Spark 3.
+
+See [here](https://mungingdata.com/apache-spark/upgrate-to-spark-3-scala-2-12/) for a detailed description of the Spark 3 migration process that'll certainly be repeated as Spark starts supporting Scala 2.13.
+
+### Supporting multiple Spark versions
+
+You can create a build matrix and build JAR files for different Scala / Spark version combinations.  This gets complicated quickly and should almost always be avoided.
+
+Here are the four JAR files you could release for a given release if you'd like to support Spark 2.3.4, 2.4.5, and 3.1.1:
+
+|      | 2.3.4 | 2.4.5 | 3.1.1 |
+|------|-------|-------|-------|
+| 2.11 | X     | X     |       |
+| 2.12 |       | X     | X     |
+
+You could output these JAR files for version 0.6.0 of your project:
+
+* your-project_2.11-2.3.4_0.6.0.jar
+* your-project_2.11-2.4.5_0.6.0.jar
+* your-project_2.12-2.4.5_0.6.0.jar
+* your-project_2.12-3.1.1_0.6.0.jar
+
+Releasing projects in this manner gets complicated quickly.  Big Spark projects like Delta don't even try to get so fancy, look at the Delta releases:
+
+![Delta releases](https://github.com/MrPowers/spark-style-guide/blob/main/images/delta_releases.png)
+
+Delta told users "you need to upgrade to Spark 3 to use version 0.8.0 of Delta" rather that descending into the madness of supporting all the different Spark versions.
+
+Maintaining Spark projects is costly and teams should proactively make decisions that minimize the future maintenance burden of the project.
 
 ### Projects that support a single Spark version
 
@@ -595,6 +719,8 @@ The [`Dataset`](https://spark.apache.org/docs/2.1.0/api/java/org/apache/spark/sq
 * Organize code into column functions and custom transformations whenever possible
 * Write code in version controlled projects, so you can take advantage of text editor features (and not pay for an expensive cluster when developing)
 * Constantly bump SBT versions (it updates frequently)
+* Carefully inspect the contents of your JAR files
+* Use package privacy to limit the surface of the public interface
 
 Read [Beautiful Spark](https://leanpub.com/beautiful-spark) for more information about Spark project best practices.
 
