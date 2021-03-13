@@ -228,7 +228,7 @@ Don't run `df.withColumn("name", coalesce($"name", $"nickname"))` and overwrite 
 +-----+--------+
 ```
 
-It's better to preserve column immutability by creating a new column.
+It's better to preserve column immutability by creating a new column, so column immutability is preserved.
 
 ```
 +-----+--------+---------+
@@ -291,6 +291,14 @@ UDFs [are a black box](https://jaceklaskowski.gitbooks.io/mastering-spark-sql/sp
 Most logic can be coded as a custom SQL function.  Only revert to UDFs when the native Spark API isn't sufficient.
 
 See [this blog post](https://medium.com/@mrpowers/spark-user-defined-functions-udfs-6c849e39443b) for more information about UDFs.
+
+### <a name='catalyst-expressions'>Catalyst Expressions</a>
+
+Catalyst expressions (aka Spark native functions) are implemented like the functions in `org.apache.spark.sql.functions`.
+
+[This blog post](https://neapowers.com/apache-spark/native-functions-catalyst-expressions/) explains how to write Spark native functions.  This design pattern is used in projects like [bebe](https://github.com/MrPowers/bebe/) and [itachi](https://github.com/yaooqinn/itachi).
+
+Catalyst expressions can be optimized by Spark and are great for advanced users that want to build advanced functionality.
 
 ### <a name='custom-transformations'>Custom transformations</a>
 
