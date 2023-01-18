@@ -1,32 +1,30 @@
 # PySpark Style Guide
 
-PySpark provides you with access to Python language bindings to the an amazingly powerful Apache Spark big data engine.
+PySpark provides you with access to Python language bindings to the Apache Spark big data engine.
 
-This document draws on PySpark source code to outline coding conventions and best practices.
+This document outlines the best practices you should follow when writing PySpark code.
 
-Comprehensive Python style guides / code formatting tools already exist and this document focuses specifically on the style issues for PySpark programmers.
+Automatic Python code formatting tools already exist so this document focuses specifically on PySpark best practices and how to structure PySpark code.
 
 As with any style guide, take caution:
 
 > Any style guide written in English is either so brief that it’s ambiguous, or so long that no one reads it.
 > - [Bob Nystrom](http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/)
 
-## <a name='imports'>Imports</a>
+## Imports
 
-Import the Pyspark SQL functions into a variable named `F` to avoid polluting the global namespace.
+Import the PySpark SQL functions into a variable named `F` to avoid polluting the global namespace.
 
 ```python
 from pyspark.sql import functions as F
 ```
 
-For lesser user libraries, you can import the namespace, so subsequent invocations in the codebase are readable.  Here's an example with the [quinn library](https://github.com/MrPowers/quinn):
+You can structure libraries such that the public interface is exposed in a single namespace, so its easy to identify the source of subsequent function invocations.  Here's an example with the [quinn library](https://github.com/MrPowers/quinn):
 
 ```python
 import quinn
 
-...
-
-quinn.validate_absence_of_columns(source_df, ["age", "cool"])
+quinn.validate_absence_of_columns(df, ["age", "cool"])
 ```
 
 This import style makes it easy to identify where the `validate_absence_of_columns` function was defined.
@@ -37,66 +35,284 @@ You can also use this import style:
 from quinn import validate_absence_of_columns
 ```
 
+## Column functions
+
+Here's an example of a column function that returns `child` when the age is less than 13, `teenager` when the age is between 13 and 18, and `adult` when the age is above 18.
+
+```python
+def life_stage(col):
+    return (
+        F.when(col < 13, "child")
+        .when(col.between(13, 18), "teenager")
+        .when(col > 18, "adult")
+    )
+```
+
+The `life_stage()` function will return `null` when `col` is `null`.  All built-in Spark functions gracefully handle the `null` case, so we don't need to write explicit `null` logic in the `life_stage()` function.
+
+Custom SQL functions can also be optimized by the Spark compiler, so this is a good way to write code.
+
+## Schema Dependent Custom DataFrame Transformations
+
+Custom DataFrame transformations are functions that take a DataFrame as an argument and return a DataFrame.  Custom DataFrame transformations are easy to test and reuse, so they're a good way to structure Spark code.
+
+Let's wrap the `life_stage` column function we previously defined in a custom transformation.
+
+```python
+def with_life_stage(df):
+    return df.withColumn("life_stage", life_stage(F.col("age")))
+```
+
+You can invoke this custom DataFrame transformation with the `transform` method:
+
+```python
+df.transform(with_life_stage).show()
+```
+
+`with_life_stage` is an example of a schema dependent custom DataFrame transformation because it can only be run on DataFrame with an `age` column.  Custom DataFrame transformations make assumptions about the schema of the DataFrames they're run on.
+
+## Schema Independent Custom DataFrame Transformations
+
+Let's refactor the `with_life_stage` function so that it takes the column name as a parameter and does not depend on the underlying DataFrame schema (this syntax works as of PySpark 3.3.0).
+
+```python
+def with_life_stage2(df, col_name):
+    return df.withColumn("life_stage", life_stage(F.col(col_name)))
+```
+
+There are two ways to invoke this schema independent custom DataFrame transformation:
+
+```python
+# invoke with a positional argument
+df.transform(with_life_stage2, "age")
+
+# invoke with a keyword argument
+df.transform(with_life_stage2, col_name="age")
+```
+
+Read [this blog post](https://mungingdata.com/pyspark/chaining-dataframe-transformations/) for a full discussion on building custom transformation functions pre-PySpark 3.3.0.
+
+## What type of DataFrame transformation should be used
+
+Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data table with a schema that doesn't change).
+
+Schema independent transformations should be run for functions that will be run on DataFrames with different schemas.
+
+## Best practices for None and `null`
+
+`null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
+
+Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
+
+Let's take a look at a `with_full_name` custom DataFrame transformation:
+
+```python
+def with_full_name(df):
+    return df.withColumn(
+        "full_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name"))
+    )
+```
+
+`with_full_name` returns `null` if either the `first_name` or `last_name` is `null`.  Let's take a look at an example:
+
+Let's create a DataFrame to demonstrate the functionality of `with_full_name`:
+
+```python
+df = spark.createDataFrame(
+    [("Marilyn", "Monroe"), ("Abraham", None), (None, None)]
+).toDF("first_name", "last_name")
+```
+
+Here are the DataFrame contents:
+
+```
++----------+---------+
+|first_name|last_name|
++----------+---------+
+|   Marilyn|   Monroe|
+|   Abraham|     null|
+|      null|     null|
++----------+---------+
+```
+
+Here's how to invoke the custom DataFrame transformation:
+
+```python
+df.transform(with_full_name).show()
+```
+
+```
++----------+---------+--------------+
+|first_name|last_name|     full_name|
++----------+---------+--------------+
+|   Marilyn|   Monroe|Marilyn Monroe|
+|   Abraham|     null|       Abraham|
+|      null|     null|              |
++----------+---------+--------------+
+```
+
+The nullable property of a column should be set to `false` if the column should not take `null` values.  Look at the nullable properties in the resulting DataFrame.
+
+```
+df.transform(with_full_name).printSchema()
+
+root
+ |-- first_name: string (nullable = true)
+ |-- last_name: string (nullable = true)
+ |-- full_name: string (nullable = false)
+```
+
+`first_name` and `last_name` have `nullable` set to `true` because they can take `null` values.  `full_name` has `nullable` set to `false` because every value must be a string.
+
+See the section on User Defined Functions for more information about properly handling the `null` case for UDFs.
+
+## Testing column functions
+
+You can use the [chispa](https://github.com/MrPowers/chispa) library to unit test your PySpark column functions and custom DataFrame transformations.
+
+Let's look at how to unit test the `life_stage` column function:
+
+```python
+def life_stage(col):
+    return (
+        F.when(col < 13, "child")
+        .when(col.between(13, 19), "teenager")
+        .when(col > 19, "adult")
+    )
+```
+
+Create a test DataFrame with the expected return value of the function for each row:
+
+```python
+df = spark.createDataFrame(
+    [
+        ("karen", 56, "adult"),
+        ("jodie", 16, "teenager"),
+        ("jason", 3, "child"),
+        (None, None, None),
+    ]
+).toDF("first_name", "age", "expected")
+```
+
+Now invoke the function and create the result DataFrame:
+
+```python
+res = df.withColumn("actual", life_stage(F.col("age")))
+```
+
+Assert that the actual return value equals the expected value:
+
+```python
+import chispa
+
+chispa.assert_column_equality(res, "expected", "actual")
+```
+
+You should always test the `None` / `null` case to make sure that your code behaves as expected.
+
+## Testing custom DataFrame transformations
+
+Suppose you have the following custom transformation: 
+
+```python
+def with_full_name(df):
+    return df.withColumn(
+        "full_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name"))
+    )
+```
+
+Create a minimalistic input DataFrame with some test data:
+
+```python
+input_df = spark.createDataFrame(
+    [("Marilyn", "Monroe"), ("Abraham", None), (None, None)]
+).toDF("first_name", "last_name")
+```
+
+Create a DataFrame with the expected data:
+
+```python
+expected_df = spark.createDataFrame(
+    [
+        ("Marilyn", "Monroe", "Marilyn Monroe"),
+        ("Abraham", None, "Abraham"),
+        (None, None, ""),
+    ]
+).toDF("first_name", "last_name", "full_name")
+```
+
+Make sure the expected DataFrame equals the input DataFrame with the custom DataFrame transformation applied:
+
+```python
+chispa.assert_df_equality(
+    expected_df, input_df.transform(with_full_name), ignore_nullable=True
+)
+```
+
 ## Automatic code formatting
 
 You should use [Black](https://github.com/psf/black) to automatically format your code in a PEP 8 compliant manner.
 
 You should use automatic code formatting for both your projects and your notebooks.
 
+## Typing
+
+TODO: Add guidance
+
 ## Variable naming conventions
 
-Variables should use `snake_case`.  Variables that point to DataFrames, Datasets, and RDDs should be suffixed to make your code readable:
+Variables should use `snake_case`.  Variables that point to DataFrames and RDDs should be suffixed to make your code readable:
 
 * Variables pointing to DataFrames should be suffixed with `df`:
 
-```scala
+```python
 people_df.createOrReplaceTempView("people")
 ```
 
 * Variables pointing to RDDs should be suffixed with `rdd`:
 
-```scala
-val people_rdd = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
+```python
+people_rdd = spark.sparkContext.textFile("examples/src/main/resources/people.txt")
 ```
 
 Use the variable `col` for `Column` arguments.
 
-```scala
-def min(col: Column)
+```python
+def min(col)
 ```
 
 Use `col1` and `col2` for functions that take two `Column` arguments.
 
-```scala
-def corr(col1: Column, col2: Column)
+```python
+def corr(col1, col2)
 ```
 
 Use `cols` for functions that take an arbitrary number of `Column` arguments.
 
-```scala
-def array(cols: Column*)
+```python
+def array(cols)
 ```
 
 Use `col_name` for functions that take a `String` argument that refers to the name of a `Column`.
 
-```scala
-def sqrt(col_name: String): Column
+```python
+def sqrt(col_name)
 ```
 
 Use `col_name1` and `col_name2` for methods that take multiple column name arguments.
 
 Collections should use plural variable names.
 
-```scala
+```python
 animals = ["dog", "cat", "goose"]
 
-// DON'T DO THIS
+# DON'T DO THIS
 animal_list = ["dog", "cat", "goose"]
 ```
 
 Singular nouns should be used for single objects.
 
-```scala
+```python
 my_car_color = "red"
 ```
 
@@ -106,7 +322,7 @@ Columns have name, type, nullable, and metadata properties.
 
 Columns that contain boolean values should use predicate names like `is_nice_person` or `has_red_hair`.  Use `snake_case` for column names, so it's easier to write SQL code.
 
-You can write `(col("is_summer") && col("is_europe"))` instead of `(col("is_summer") === true && col("is_europe") === true)`.  The predicate column names make the concise syntax readable.
+You can write `(col("is_summer") and col("is_europe"))` instead of `(col("is_summer") === true and col("is_europe") === true)`.  The predicate column names make the concise syntax readable.
 
 Columns should be typed properly.  Don't overuse `StringType` columns.
 
@@ -130,55 +346,40 @@ Here are some example column names:
 * `player_age_between_13_19`
 * `player_age_eq_45`
 
-## Custom Transformations
-
-Here's an example of a custom transformat that returns `child` when the age is less than 13, `teenager` when the age is between 13 and 18, and `adult` when the age is above 18.
-
-```scala
-import pyspark.sql.Column
-
-def life_stage(col):
-  when(col < 13, "child").when(col >= 13 && col <= 18, "teenager").when(col > 18, "adult")
-```
-
-The `life_stage()` function will return `null` when `col` is `null`.  All built-in Spark functions gracefully handle the `null` case, so we don't need to write explicit `null` logic in the `life_stage()` function.
-
-Custom SQL functions can also be optimized by the Spark compiler, so this is a good way to write code.  Read [this blog post](https://mungingdata.com/pyspark/chaining-dataframe-transformations/) for a full discussion on custom transformation functions.
-
-## Chaining Custom Transformations
-
-TODO
-
 ## User defined functions
 
 You can write User Defined Functions (UDFs) when you need to write code that leverages Python programming features / Python libraries that aren't accessible in Spark.
 
-Here's an example of a UDF that downcases and removes the whitespace of a string:
+Here's an example of a UDF that appends "is fun" to a string:
+
+```python
+from pyspark.sql.types import StringType
+from pyspark.sql.functions import udf
 
 
-```scala
-def betterLowerRemoveAllWhitespace(s: String):
-  val str = Option(s).getOrElse(return None)
-  Some(str.toLowerCase().replaceAll("\\s", ""))
-
-val betterLowerRemoveAllWhitespaceUDF = udf[Option[String], String](betterLowerRemoveAllWhitespace)
+@udf(returnType=StringType())
+def bad_funify(s):
+    return s + " is fun!"
 ```
 
-The `betterLowerRemoveAllWhitespace()` function explicitly handles `None` input, so the function won't error out with a `NullPointerException`.  You should always write UDFs that handle `None` input gracefully.
+The `bad_funify` function is poorly structured because it errors out when run on a column with `null` values.
 
-In this case, a custom SQL function can provide the same functionality, but with less code:
+Here's how to refactor the UDF to handle `null` input without erroring out:
 
-```scala
-def bestLowerRemoveAllWhitespace()(col: Column): Column = {
-  lower(regexp_replace(col, "\\s+", ""))
-}
+```python
+@udf(returnType=StringType())
+def good_funify(s):
+    return None if s == None else s + " is fun!"
+```
+
+In this case, a UDF isn't even necessary.  You can just define a regular column function to get the same functionality:
+
+```python
+def best_funify(col):
+    return F.concat(col, F.lit(" is fun!"))
 ```
 
 UDFs [are a black box](https://jaceklaskowski.gitbooks.io/mastering-spark-sql/spark-sql-udfs-blackbox.html) from the Spark compiler's perspective and should be avoided whenever possible.
-
-Most logic can be coded as a custom SQL function.  Only revert to UDFs when the native Spark API isn't sufficient.
-
-See [this blog post](TODO) for more information about UDFs.
 
 ## Function naming conventions
 
@@ -198,107 +399,15 @@ See [this blog post](TODO) for more information about UDFs.
 
 * `explode` precedes transformations that add rows to a DataFrame by "exploding" a row into multiple rows.
 
-## Schema Dependent DataFrame Transformations
+## Virtual environment management
 
-Schema dependent DataFrame transformations make assumptions about the underlying DataFrame schema.  Schema dependent DataFrame transformations should explicitly validate DataFrame dependencies to clarify intentions of the code and provide readable error messages.
+### Poetry
 
-The following `with_full_name()` DataFrame transformation assumes the underlying DataFrame has `first_name` and `last_name` columns.
+TODO
 
-```scala
-def with_full_name(df):
-  df.withColumn(
-    "full_name",
-    F.concat_ws(" ", col("first_name"), col("last_name"))
-  )
-```
+### Conda
 
-You should use [quinn](https://github.com/mrpowers/quinn) to validate the schema requirements of a DataFrame transformation.
-
-```scala
-import quinn
-
-def with_full_name()(df: DataFrame): DataFrame = {
-  quinn.validatePresenceOfColumns(df, Seq("first_name", "last_name"))
-  df.withColumn(
-    "full_name",
-    F.concat_ws(" ", col("first_name"), col("last_name"))
-  )
-}
-```
-
-Notice how the refactored function makes it clear that this function requires `first_name` and `last_name` columns to run properly.
-
-You can also refactor the custom transformation to remove the column name dependency:
-
-```scala
-def with_full_name(first_name_col, last_name_col):
-  quinn.validatePresenceOfColumns(df, Seq(firstColName, lastColName))
-  df.withColumn(
-    "full_name",
-    F.concat_ws(" ", col(firstColName), col(lastColName))
-  )
-```
-
-Schema Independent DataFrame Transformations
-
-Schema independent DataFrame transformations do not depend on the underlying DataFrame schema, as discussed in [this blog post](https://medium.com/@mrpowers/schema-independent-dataframe-transformations-d6b36e12dca6).
-
-```scala
-def withAgePlusOne(
-  ageColName: String,
-  resultColName: String
-)(df: DataFrame): DataFrame = {
-  df.withColumn(resultColName, col(ageColName) + 1)
-}
-```
-
-The `withAgePlusOne` allows users to pass in column names, so the function can be applied to DataFrames with different schemas.
-
-Schema independent DataFrame transformations also allow for column validations, so they output readable error messages.
-
-```scala
-def withAgePlusOne(
-  ageColName: String,
-  resultColName: String
-)(df: DataFrame): DataFrame = {
-  validatePresenceOfColumns(df, Seq(ageColName, resultColName))
-  df.withColumn(resultColName, col(ageColName) + 1)
-}
-```
-
-## What type of DataFrame transformation should be used
-
-Schema dependent transformations should be used for functions that rely on a large number of columns or functions that are only expected to be run on a certain schema (e.g. a data lake with a schema that doesn't change).
-
-Schema independent transformations should be run for functions that will be run on DataFrames with different schemas
-
-## None / null
-
-`null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
-
-Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
-
-Let's revisit the `with_full_name` function from earlier:
-
-```scala
-def with_full_name(df: DataFrame):
-  df.withColumn(
-    "full_name",
-    concat_ws(" ", col("first_name"), col("last_name"))
-  )
-```
-
-`with_full_name` returns `null` if either the `first_name` or `last_name` column is `null`.  Let's take a look at an example:
-
-ADD EXAMPLE
-
-The nullable property of a column should be set to `false` if the column should not take `null` values.
-
-### Test suites
-
-You should always test the `null` case to make sure that your code behaves as expected.
-
-ADD DISUSSION
+TODO
 
 ## Wheel Files
 
@@ -314,24 +423,30 @@ TODO: Add guidance on propertly supporting multiple Spark / Delta Lake versions.
 
 ## Documentation
 
-TODO: Look how PySpark is documented and follow their examples exactly
+TODO: Look how PySpark is documented and follow their examples
 
-## <a name='testing'>Testing</a>
-
-Use the [chispa](https://github.com/MrPowers/chispa) library to unit test your Spark code.
-
-TODO: Add more descriptions
-
-## <a name='open-source'>Open Source</a>
+## Open Source
 
 You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to PyPi) and forces you to abstract reusable chunks of open code from business logic.
 
 TODO: Add quinn and mack examples
 
-## <a name='best-practices'>Best Practices</a>
+## Best Practices
 
-* Limit project dependencies and inspect transitive dependencies closely.  Don't depend on projects with lots of other dependencies.
+* Limit project dependencies and inspect transitive dependencies closely.  Try to avoid depending on projects with lots of transitive dependencies.
 * Write code that's easy to copy and paste in notebooks
 * Organize code into column functions and custom transformations whenever possible
 * Write code in version controlled projects, so you can take advantage of text editor features (and not pay for an expensive cluster when developing)
 * Only surface a minimal public interface in your libraries
+
+## Avoid overreliance on notebooks
+
+TODO: Discuss why version control is important
+
+## Continuous integration
+
+TODO
+
+## Continuous deployment
+
+TODO
