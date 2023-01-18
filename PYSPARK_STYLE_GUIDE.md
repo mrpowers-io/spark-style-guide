@@ -4,7 +4,7 @@ PySpark provides you with access to Python language bindings to the Apache Spark
 
 This document outlines the best practices you should follow when writing PySpark code.
 
-Automatic Python code formatting tools already exist so this document focuses specifically on PySpark best practices and how to structure PySpark code.
+Automatic Python code formatting tools already exist so this document focuses specifically on PySpark best practices and how to structure PySpark code, not on general Python code formatting.
 
 As with any style guide, take caution:
 
@@ -35,6 +35,12 @@ You can also use this import style:
 from quinn import validate_absence_of_columns
 ```
 
+Don't follow this import style that makes it hard to determine where `validate_absence_of_columns` comes from:
+
+```python
+from quinn import *
+```
+
 ## Column functions
 
 Here's an example of a column function that returns `child` when the age is less than 13, `teenager` when the age is between 13 and 19, and `adult` when the age is above 19.
@@ -50,26 +56,26 @@ def life_stage(col):
 
 The `life_stage()` function will return `null` when `col` is `null`.  All built-in Spark functions gracefully handle the `null` case, so we don't need to write explicit `null` logic in the `life_stage()` function.
 
-Custom SQL functions can also be optimized by the Spark compiler, so this is a good way to write code.
+Column functions can also be optimized by the Spark compiler, so this is a good way to write code.
 
 ## Schema Dependent Custom DataFrame Transformations
 
 Custom DataFrame transformations are functions that take a DataFrame as an argument and return a DataFrame.  Custom DataFrame transformations are easy to test and reuse, so they're a good way to structure Spark code.
 
-Let's wrap the `life_stage` column function we previously defined in a custom transformation.
+Let's wrap the `life_stage` column function that we previously defined in a schema dependent custom transformation.
 
 ```python
 def with_life_stage(df):
     return df.withColumn("life_stage", life_stage(F.col("age")))
 ```
 
-You can invoke this custom DataFrame transformation with the `transform` method:
+You can invoke this schema dependent custom DataFrame transformation with the `transform` method:
 
 ```python
-df.transform(with_life_stage).show()
+df.transform(with_life_stage)
 ```
 
-`with_life_stage` is an example of a schema dependent custom DataFrame transformation because it can only be run on DataFrame with an `age` column.  Custom DataFrame transformations make assumptions about the schema of the DataFrames they're run on.
+`with_life_stage` is an example of a schema dependent custom DataFrame transformation because it must be run on DataFrame that contains an `age` column.  Schema dependent custom DataFrame transformations make assumptions about the schema of the DataFrames they're run on.
 
 ## Schema Independent Custom DataFrame Transformations
 
@@ -102,7 +108,7 @@ Schema independent transformations should be run for functions that will be run 
 
 `null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
 
-Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or explicitly returning `null`).
+Spark core functions frequently return `null` and your code can also add `null` to DataFrames (by returning `None` or relying on Spark functions that return `null`).
 
 Let's take a look at a `with_full_name` custom DataFrame transformation:
 
@@ -135,7 +141,7 @@ Here are the DataFrame contents:
 +----------+---------+
 ```
 
-Here's how to invoke the custom DataFrame transformation:
+Here's how to invoke the custom DataFrame transformation using the `transform` method:
 
 ```python
 df.transform(with_full_name).show()
@@ -151,7 +157,7 @@ df.transform(with_full_name).show()
 +----------+---------+--------------+
 ```
 
-The nullable property of a column should be set to `false` if the column should not take `null` values.  Look at the nullable properties in the resulting DataFrame.
+The `nullable` property of a column should be set to `false` if the column should not take `null` values.  Look at the `nullable` properties in the resulting DataFrame.
 
 ```
 df.transform(with_full_name).printSchema()
@@ -162,9 +168,9 @@ root
  |-- full_name: string (nullable = false)
 ```
 
-`first_name` and `last_name` have `nullable` set to `true` because they can take `null` values.  `full_name` has `nullable` set to `false` because every value must be a string.
+`first_name` and `last_name` have `nullable` set to `true` because they can take `null` values.  `full_name` has `nullable` set to `false` because every value must be a non-null string.
 
-See the section on User Defined Functions for more information about properly handling the `null` case for UDFs.
+See the section on User Defined Functions for more information about properly handling the `None` / `null` values for UDFs.
 
 ## Testing column functions
 
@@ -261,7 +267,9 @@ TODO: Add guidance
 
 ## Variable naming conventions
 
-Variables should use `snake_case`.  Variables that point to DataFrames and RDDs should be suffixed to make your code readable:
+Variables should use `snake_case`, as required by Black.
+
+Variables that point to DataFrames and RDDs should be suffixed to make your code readable:
 
 * Variables pointing to DataFrames should be suffixed with `df`:
 
@@ -326,7 +334,7 @@ You can write `(col("is_summer") and col("is_europe"))` instead of `(col("is_sum
 
 Columns should be typed properly.  Don't overuse `StringType` columns.
 
-Columns should only be nullable if `null` values are allowed.  Code written for nullable columns should always handle `null` values gracefully.
+Columns should only be nullable if `null` values are allowed.  Functions invoked on nullable columns should always handle `null` values gracefully.
 
 Use acronyms when needed to keep column names short.  Define any acronyms used at the top of the data file, so other programmers can follow along.
 
@@ -360,6 +368,7 @@ from pyspark.sql.functions import udf
 @udf(returnType=StringType())
 def bad_funify(s):
     return s + " is fun!"
+
 ```
 
 The `bad_funify` function is poorly structured because it errors out when run on a column with `null` values.
@@ -367,16 +376,20 @@ The `bad_funify` function is poorly structured because it errors out when run on
 Here's how to refactor the UDF to handle `null` input without erroring out:
 
 ```python
+
 @udf(returnType=StringType())
 def good_funify(s):
     return None if s == None else s + " is fun!"
+
 ```
 
 In this case, a UDF isn't even necessary.  You can just define a regular column function to get the same functionality:
 
 ```python
+
 def best_funify(col):
     return F.concat(col, F.lit(" is fun!"))
+    
 ```
 
 UDFs [are a black box](https://jaceklaskowski.gitbooks.io/mastering-spark-sql/spark-sql-udfs-blackbox.html) from the Spark compiler's perspective and should be avoided whenever possible.
