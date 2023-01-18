@@ -37,14 +37,14 @@ from quinn import validate_absence_of_columns
 
 ## Column functions
 
-Here's an example of a column function that returns `child` when the age is less than 13, `teenager` when the age is between 13 and 18, and `adult` when the age is above 18.
+Here's an example of a column function that returns `child` when the age is less than 13, `teenager` when the age is between 13 and 19, and `adult` when the age is above 19.
 
 ```python
 def life_stage(col):
     return (
         F.when(col < 13, "child")
-        .when(col.between(13, 18), "teenager")
-        .when(col > 18, "adult")
+        .when(col.between(13, 19), "teenager")
+        .when(col > 19, "adult")
     )
 ```
 
