@@ -13,10 +13,17 @@ As with any style guide, take caution:
 
 ## Imports
 
-Import the PySpark SQL functions into a variable named `F` to avoid polluting the global namespace.
+Import the PySpark SQL functions into a variable named `F` to avoid polluting the global namespace:
 
 ```python
 from pyspark.sql import functions as F
+```
+
+Similarly, import the types into a variable `T`:
+
+
+```python
+from pyspark.sql import types as T
 ```
 
 You can structure libraries such that the public interface is exposed in a single namespace, so its easy to identify the source of subsequent function invocations.  Here's an example with the [quinn library](https://github.com/MrPowers/quinn):
