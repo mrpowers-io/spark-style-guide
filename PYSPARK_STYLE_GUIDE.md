@@ -6,11 +6,6 @@ This document outlines the best practices you should follow when writing PySpark
 
 Automatic Python code formatting tools already exist so this document focuses specifically on PySpark best practices and how to structure PySpark code, not on general Python code formatting.
 
-As with any style guide, take caution:
-
-> Any style guide written in English is either so brief that it’s ambiguous, or so long that no one reads it.
-> - [Bob Nystrom](http://journal.stuffwithstuff.com/2015/09/08/the-hardest-program-ive-ever-written/)
-
 ## Imports
 
 Import the PySpark SQL functions into a variable named `F` to avoid polluting the global namespace.
@@ -104,7 +99,7 @@ Schema dependent transformations should be used for functions that rely on a lar
 
 Schema independent transformations should be run for functions that will be run on DataFrames with different schemas.
 
-## Best practices for None and `null`
+## Best practices for `None` and `null`
 
 `null` should be used in DataFrames for values that are [unknown, missing, or irrelevant](https://medium.com/@mrpowers/dealing-with-null-in-spark-cfdbb12f231e#.fk27ontik).
 
@@ -257,6 +252,8 @@ chispa.assert_df_equality(
 
 ## Automatic code formatting
 
+TODO: Determine if Black or Ruff should be recommended.
+
 You should use [Black](https://github.com/psf/black) to automatically format your code in a PEP 8 compliant manner.
 
 You should use automatic code formatting for both your projects and your notebooks.
@@ -398,21 +395,29 @@ UDFs [are a black box](https://jaceklaskowski.gitbooks.io/mastering-spark-sql/sp
 
 * `with` precedes transformations that add columns:
 
-  - `withCoolCat()` adds the column `cool_cat` to a DataFrame
+  - `with_cool_cat()` adds the column `cool_cat` to a DataFrame
 
-  - `withIsNicePerson()` adds the column `is_nice_person` to a DataFrame.
+  - `with_is_nice_person()` adds the column `is_nice_person` to a DataFrame.
 
 * `filter` precedes transformations that remove rows:
 
-  - `filterNegativeGrowthRate()` removes the data rows where the `growth_rate` column is negative
+  - `filter_negative_growth_rate()` removes the data rows where the `growth_rate` column is negative
 
-  - `filterInvalidZipCodes()` removes the data with a malformed `zip_code`
+  - `filter_invalid_zip_codes()` removes the data with a malformed `zip_code`
 
 * `enrich` precedes transformations that clobber columns.  Clobbing columns should be avoided when possible, so `enrich` transformations should only be used in rare circumstances.
 
 * `explode` precedes transformations that add rows to a DataFrame by "exploding" a row into multiple rows.
 
 ## Virtual environment management
+
+### uv
+
+TODO
+
+### venv
+
+TODO
 
 ### Poetry
 
@@ -428,21 +433,25 @@ TODO: Add guidance
 
 ## Supporting multiple Spark versions
 
-Libraries should generally support multiple Spark versions (multiple Python versions for that matter too).
+Libraries should generally support multiple Spark versions (multiple Python versions for that matter too).  For example, the chispa library should work with many PySpark versions and chispa should intentionally avoid depending on new PySpark features that would compromise `pip install chispa` from working properly on older PySpark versions.
 
-It's OK for applications to only support a single Spark / Python version.
+It's OK for applications to only support a single Spark/Python version.
 
-TODO: Add guidance on propertly supporting multiple Spark / Delta Lake versions.
+TODO: Add guidance on propertly supporting multiple Spark/Delta Lake versions.
 
 ## Documentation
 
 TODO: Look how PySpark is documented and follow their examples
 
-## Open Source
+## Open Source Library development
 
 You should write generic open source code whenever possible.  Open source code is easily reusable (especially when it's uploaded to PyPi) and forces you to abstract reusable chunks of open code from business logic.
 
 TODO: Add quinn and mack examples
+
+* Support many PySpark versions
+* Expose the public interface with a clean import interface
+* Only surface a minimal public interface in your libraries
 
 ## Best Practices
 
@@ -450,7 +459,6 @@ TODO: Add quinn and mack examples
 * Write code that's easy to copy and paste in notebooks
 * Organize code into column functions and custom transformations whenever possible
 * Write code in version controlled projects, so you can take advantage of text editor features (and not pay for an expensive cluster when developing)
-* Only surface a minimal public interface in your libraries
 
 ## Avoid overreliance on notebooks
 
@@ -461,5 +469,9 @@ TODO: Discuss why version control is important
 TODO
 
 ## Continuous deployment
+
+TODO
+
+## Spark Connect compliance
 
 TODO
